@@ -148,18 +148,10 @@ async def metrics_endpoint():
     return get_metrics_summary()
 
 
-@app.get("/", response_class=FileResponse)
-async def root():
-    static_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    if os.path.exists(static_path):
-        return static_path
-    return {"message": "Frontend not yet built"}
-
-
 # Serve static files
-static_path = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_path):
-    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 
 if __name__ == "__main__":

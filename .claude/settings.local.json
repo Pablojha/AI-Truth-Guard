@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(curl -s http://127.0.0.1:8000/healthz)"
+      "PowerShell(curl -s http://127.0.0.1:8000/healthz)",
+      "PowerShell(Stop-Process -Name python -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }
