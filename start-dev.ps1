@@ -2,19 +2,49 @@
 # Run this script to start the FastAPI backend in development mode
 
 param(
-    [switch]$Demo = $false
+    [switch]$Demo = $false,
+    [switch]$Help = $false
 )
 
+if ($Help) {
+    Write-Host "Usage: .\start-dev.ps1 [-Demo]" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Options:" -ForegroundColor Cyan
+    Write-Host "  -Demo    Use demo mode (sample data, no Ollama required)"
+    Write-Host "  -Help    Show this help message"
+    Write-Host ""
+    Write-Host "Examples:" -ForegroundColor Green
+    Write-Host "  .\start-dev.ps1 -Demo              # Demo mode"
+    Write-Host "  .\start-dev.ps1                    # Local mode (needs Ollama)"
+    exit 0
+}
+
+Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host "🛡️  AI TruthGuard - Development Server" -ForegroundColor Cyan
+Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Check Python installation
+Write-Host "Checking Python..." -NoNewline
+try {
+    $pythonVersion = python --version 2>&1
+    Write-Host " OK ($pythonVersion)" -ForegroundColor Green
+} catch {
+    Write-Host " ERROR" -ForegroundColor Red
+    Write-Host "Python not found. Install from https://www.python.org/" -ForegroundColor Yellow
+    exit 1
+}
+
 # Activate virtual environment
+Write-Host "Activating virtual environment..." -NoNewline
 $venvPath = Join-Path $PSScriptRoot "venv\Scripts\Activate.ps1"
 if (Test-Path $venvPath) {
     & $venvPath
-    Write-Host "✓ Virtual environment activated" -ForegroundColor Green
+    Write-Host " OK" -ForegroundColor Green
 } else {
-    Write-Host "✗ Virtual environment not found. Run: python -m venv venv" -ForegroundColor Red
+    Write-Host " ERROR" -ForegroundColor Red
+    Write-Host "Virtual environment not found. Run: python -m venv venv" -ForegroundColor Yellow
+    Write-Host "Then: pip install -e '.[dev]'" -ForegroundColor Yellow
     exit 1
 }
 
@@ -50,13 +80,17 @@ if ($Demo) {
 }
 
 Write-Host ""
-Write-Host "Starting server..." -ForegroundColor Cyan
-Write-Host "Frontend:  http://localhost:8000" -ForegroundColor Green
-Write-Host "API:       http://localhost:8000/docs" -ForegroundColor Green
-Write-Host "Health:    http://localhost:8000/healthz" -ForegroundColor Green
+Write-Host "=====================================" -ForegroundColor Cyan
+Write-Host "Starting FastAPI Server..." -ForegroundColor Cyan
+Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Press Ctrl+C to stop" -ForegroundColor Gray
+Write-Host "FRONTEND:    http://localhost:8000" -ForegroundColor Green
+Write-Host "API DOCS:    http://localhost:8000/docs" -ForegroundColor Green
+Write-Host "HEALTH:      http://localhost:8000/healthz" -ForegroundColor Green
+Write-Host ""
+Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Gray
+Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Start the server
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level info
