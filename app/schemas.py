@@ -4,8 +4,14 @@ from enum import Enum
 
 
 class Verdict(str, Enum):
+    # For backward compatibility with fixture provider
     SUPPORTED = "SUPPORTED"
     REFUTED = "REFUTED"
+    # New explicit verdicts for real verification
+    VERIFIED_TRUE = "VERIFIED_TRUE"
+    VERIFIED_FALSE = "VERIFIED_FALSE"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+    CONFLICTING_EVIDENCE = "CONFLICTING_EVIDENCE"
     NOT_ENOUGH_EVIDENCE = "NOT_ENOUGH_EVIDENCE"
     ABSTAIN = "ABSTAIN"
 
@@ -41,6 +47,7 @@ class ClaimResult(BaseModel):
     evidence: List[EvidenceCitation] = []
     numeric_check: Optional[NumericCheck] = None
     model_warning: Optional[str] = None
+    checked_date: Optional[str] = None
 
 
 class VerificationRequest(BaseModel):

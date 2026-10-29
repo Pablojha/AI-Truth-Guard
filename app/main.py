@@ -200,10 +200,10 @@ async def verify(
 
         ctx.add_event("verification_complete", {"results_count": len(results)})
 
-        # Count verdicts
-        supported = sum(1 for r in results if r.verdict == Verdict.SUPPORTED)
-        refuted = sum(1 for r in results if r.verdict == Verdict.REFUTED)
-        insufficient = sum(1 for r in results if r.verdict == Verdict.NOT_ENOUGH_EVIDENCE)
+        # Count verdicts (support both old and new verdict names)
+        supported = sum(1 for r in results if r.verdict in (Verdict.SUPPORTED, Verdict.VERIFIED_TRUE))
+        refuted = sum(1 for r in results if r.verdict in (Verdict.REFUTED, Verdict.VERIFIED_FALSE))
+        insufficient = sum(1 for r in results if r.verdict in (Verdict.NOT_ENOUGH_EVIDENCE, Verdict.INSUFFICIENT_EVIDENCE))
         abstain = sum(1 for r in results if r.verdict == Verdict.ABSTAIN)
 
         for result in results:

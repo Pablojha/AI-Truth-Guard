@@ -808,6 +808,32 @@
             border-color: rgba(100, 116, 139, 0.3);
         }
 
+        .verdict-badge.verified-true {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.08) 100%);
+            color: #0d7f4d;
+            border-color: rgba(34, 197, 94, 0.4);
+            font-weight: 600;
+        }
+
+        .verdict-badge.verified-false {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.08) 100%);
+            color: #7d1b1b;
+            border-color: rgba(239, 68, 68, 0.4);
+            font-weight: 600;
+        }
+
+        .verdict-badge.insufficient-evidence {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.08) 100%);
+            color: #78350e;
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .verdict-badge.conflicting-evidence {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%);
+            color: #6b21a8;
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
         .confidence-band {
             font-size: 0.875rem;
             color: var(--text-secondary);
@@ -1580,12 +1606,23 @@
             data.claims.forEach((claim, idx) => {
                 const verdictClass = claim.verdict.toLowerCase().replace(/_/g, '-');
                 const hasEvidence = claim.evidence && claim.evidence.length > 0;
+                const checkedDate = claim.checked_date ? new Date(claim.checked_date).toLocaleDateString() : 'Unknown';
+
+                // Format verdict for display
+                let verdictLabel = claim.verdict
+                    .replace(/_/g, ' ')
+                    .split(' ')
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                    .join(' ');
 
                 html += `
                     <div class="claim-card">
                         <div class="claim-header">
                             <div class="claim-text">Claim ${idx + 1}: ${claim.claim_text}</div>
-                            <div class="verdict-badge ${verdictClass}">${claim.verdict}</div>
+                            <div class="verdict-badge ${verdictClass}">${verdictLabel}</div>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">
+                            Checked: ${checkedDate}
                         </div>
                         <div class="confidence-band"><strong>Confidence:</strong> ${claim.confidence}</div>
                         <div class="explanation">${claim.explanation}</div>
@@ -1597,7 +1634,10 @@
                                 <div class="evidence-list" style="display: none;">
                                     ${claim.evidence.map(e => `
                                         <div class="evidence-card">
-                                            <div class="evidence-source">[${e.source_id}] ${e.source_title}</div>
+                                            <div class="evidence-source">
+                                                [${e.source_id}]
+                                                ${e.source_url ? `<a href="${e.source_url}" target="_blank" style="color: var(--accent); text-decoration: none; cursor: pointer;">${e.source_title}</a>` : e.source_title}
+                                            </div>
                                             <div class="evidence-excerpt">"${e.excerpt}"</div>
                                             <div class="evidence-meta">
                                                 ${e.relevance_score ? `<span>Relevance: ${(e.relevance_score * 100).toFixed(0)}%</span>` : ''}
@@ -1612,7 +1652,17 @@
             });
             html += '</div>';
 
-            const providerLabel = data.provider === 'fixture' ? 'Demo (Sample Results)' : 'Ollama (Live Inference)';
+            let providerLabel = data.provider;
+            if (data.provider === 'fixture') {
+                providerLabel = '📋 Demo Mode (Precomputed Sample Results)';
+            } else if (data.provider === 'ollama') {
+                providerLabel = '🤖 Ollama (Live Inference)';
+            } else if (data.provider === 'evidence-based' || data.provider === 'websearch') {
+                providerLabel = '🔍 Evidence-Based Verification (Real Sources)';
+            } else if (data.provider === 'local') {
+                providerLabel = '💻 Local Verification';
+            }
+
             html += `
                 <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
                     <strong>Request ID:</strong> ${data.request_id}<br>
