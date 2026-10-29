@@ -49,7 +49,7 @@ def test_verify_too_long():
         "text": long_text,
         "mode": "fixture"
     })
-    assert response.status_code == 400
+    assert response.status_code == 422  # Pydantic validation error
 
 
 def test_metrics():

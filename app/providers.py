@@ -178,7 +178,7 @@ Respond with ONLY valid JSON (no markdown, no extra text):
 class FixtureProvider(BaseProvider):
     FIXTURE_DATA = {
         "supported_claim": {
-            "claim": "DeepSeek-R1 is a 14 billion parameter model.",
+            "claim_text": "DeepSeek-R1 is a 14 billion parameter model.",
             "verdict": Verdict.SUPPORTED,
             "confidence": ConfidenceBand.HIGH,
             "explanation": "The model is documented as DeepSeek-R1 with 14B parameters.",
@@ -194,7 +194,7 @@ class FixtureProvider(BaseProvider):
             ]
         },
         "refuted_claim": {
-            "claim": "DeepSeek-R1 is an open source model with unlimited usage.",
+            "claim_text": "DeepSeek-R1 is an open source model with unlimited usage.",
             "verdict": Verdict.REFUTED,
             "confidence": ConfidenceBand.MEDIUM,
             "explanation": "While DeepSeek is open source, usage is subject to its license terms.",
@@ -210,7 +210,7 @@ class FixtureProvider(BaseProvider):
             ]
         },
         "insufficient_claim": {
-            "claim": "DeepSeek-R1 is the most efficient model available.",
+            "claim_text": "DeepSeek-R1 is the most efficient model available.",
             "verdict": Verdict.NOT_ENOUGH_EVIDENCE,
             "confidence": ConfidenceBand.LOW,
             "explanation": "The corpus does not contain comparative efficiency benchmarks.",
