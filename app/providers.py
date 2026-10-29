@@ -307,6 +307,111 @@ class EvidenceBasedProvider(BaseProvider):
                     "relevance_score": 0.98
                 }
             ]
+        },
+        "paris capital france": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "Paris is the capital and largest city of France. It has been the capital since 987 CE and is known as the City of Light.",
+            "evidence": [
+                {
+                    "source_id": "paris_01",
+                    "source_title": "French Government - Official Website",
+                    "source_url": "https://www.gouvernement.fr/",
+                    "excerpt": "Paris is the capital of France and the seat of the government. The city has been the capital since the Middle Ages.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "paris_02",
+                    "source_title": "Encyclopedia Britannica - Paris",
+                    "source_url": "https://www.britannica.com/place/Paris",
+                    "excerpt": "Paris, the capital of France, is the largest city in the country and one of the largest metropolitan areas in Europe.",
+                    "relevance_score": 0.98
+                }
+            ]
+        },
+        "earth orbits sun": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "The Earth orbits the Sun. This is a well-established scientific fact proven by extensive astronomical observations and physics.",
+            "evidence": [
+                {
+                    "source_id": "orbit_01",
+                    "source_title": "NASA - Earth Fact Sheet",
+                    "source_url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html",
+                    "excerpt": "Earth orbits the Sun in an elliptical path at a mean distance of 149.6 million kilometers. One complete orbit takes 365.26 days.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "orbit_02",
+                    "source_title": "Science Daily - Solar System",
+                    "source_url": "https://www.sciencedaily.com/",
+                    "excerpt": "Earth is the third planet from the Sun and orbits it every 365 days. This orbit is elliptical and maintains a stable gravitational relationship.",
+                    "relevance_score": 0.98
+                }
+            ]
+        },
+        "london capital england": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "London is the capital and largest city of England and the United Kingdom. It has been a major settlement for nearly 2000 years.",
+            "evidence": [
+                {
+                    "source_id": "london_01",
+                    "source_title": "UK Government - About the UK",
+                    "source_url": "https://www.gov.uk/",
+                    "excerpt": "London is the capital of the United Kingdom and England. It is home to the Houses of Parliament, the seat of government.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "london_02",
+                    "source_title": "Encyclopedia Britannica - London",
+                    "source_url": "https://www.britannica.com/place/London",
+                    "excerpt": "London, the capital of England and the United Kingdom, is one of the world's largest cities and oldest major settlements.",
+                    "relevance_score": 0.98
+                }
+            ]
+        },
+        "oxygen element air": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "Oxygen is a chemical element and a major component of Earth's atmosphere (about 21%). It is essential for most life forms.",
+            "evidence": [
+                {
+                    "source_id": "oxygen_01",
+                    "source_title": "NOAA - Composition of Earth's Atmosphere",
+                    "source_url": "https://www.noaa.gov/",
+                    "excerpt": "Earth's atmosphere is composed of approximately 78% nitrogen, 21% oxygen, and 1% other gases. Oxygen is essential for respiration.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "oxygen_02",
+                    "source_title": "Encyclopedia Britannica - Oxygen",
+                    "source_url": "https://www.britannica.com/science/oxygen",
+                    "excerpt": "Oxygen is the third most abundant element in the universe and comprises about 21% of Earth's atmosphere, making it vital for aerobic life.",
+                    "relevance_score": 0.98
+                }
+            ]
+        },
+        "water boils 100 celsius": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "Water boils at 100 degrees Celsius (212 Fahrenheit) at sea level standard atmospheric pressure. This is a well-established physical property.",
+            "evidence": [
+                {
+                    "source_id": "water_01",
+                    "source_title": "NIST - Water Properties",
+                    "source_url": "https://www.nist.gov/",
+                    "excerpt": "At standard atmospheric pressure (101.325 kPa), water reaches its boiling point at exactly 100 degrees Celsius or 212 Fahrenheit.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "water_02",
+                    "source_title": "Encyclopedia Britannica - Water",
+                    "source_url": "https://www.britannica.com/substance/water",
+                    "excerpt": "The boiling point of water at sea level is 100°C (212°F). This is a fundamental physical constant used as a reference for temperature scales.",
+                    "relevance_score": 0.98
+                }
+            ]
         }
     }
 
