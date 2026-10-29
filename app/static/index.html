@@ -1233,13 +1233,31 @@
             <h1 style="margin-bottom: 2rem;">Verification Workspace</h1>
             <div class="verification-container">
                 <div class="input-section">
-                    <h2>Submit Text</h2>
+                    <h2>Submit Claim</h2>
+
+                    <!-- Text Input -->
                     <textarea
                         id="inputText"
-                        placeholder="Paste text containing claims to verify. Example: 'DeepSeek-R1 is a 14 billion parameter model released in 2024.'"
+                        placeholder="Paste text containing claims to verify. Example: 'Paris is the capital of France'"
                     ></textarea>
                     <div class="char-count">
                         <span id="charCount">0</span> / <span id="maxChars">5000</span> characters
+                    </div>
+
+                    <!-- File Upload -->
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border: 1px dashed rgba(8, 145, 178, 0.3);">
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.875rem;">
+                            📎 Or Upload Photo/PDF (optional)
+                        </label>
+                        <input
+                            type="file"
+                            id="uploadFile"
+                            accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.375rem; cursor: pointer;"
+                        >
+                        <div id="fileInfo" style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem;">
+                            Supported: PDF, PNG, JPG, GIF, BMP (Max 10MB)
+                        </div>
                     </div>
 
                     <div class="examples">
@@ -1385,6 +1403,41 @@
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('inputText')?.addEventListener('input', (e) => {
                 document.getElementById('charCount').textContent = e.target.value.length;
+            });
+
+            // File upload handler
+            document.getElementById('uploadFile')?.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Show loading message
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.textContent = 'Processing file...';
+
+                try {
+                    // Check file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        fileInfo.textContent = 'Error: File too large (max 10MB)';
+                        return;
+                    }
+
+                    // Handle different file types
+                    if (file.type === 'application/pdf') {
+                        fileInfo.textContent = 'PDF uploaded. Please paste the text content below to verify.';
+                        // PDF text extraction would require a library like pdfjs
+                    } else if (file.type.startsWith('image/')) {
+                        // For images, show OCR prompt
+                        fileInfo.textContent = 'Image uploaded. Please copy the text from the image and paste below to verify.';
+                    } else {
+                        fileInfo.textContent = 'File uploaded. Please use the text below to verify claims.';
+                    }
+
+                    // Show file name
+                    const fileName = file.name;
+                    fileInfo.textContent += ` (${fileName})`;
+                } catch (error) {
+                    fileInfo.textContent = 'Error processing file: ' + error.message;
+                }
             });
 
             checkAuth();
