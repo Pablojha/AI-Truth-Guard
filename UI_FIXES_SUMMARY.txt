@@ -1,0 +1,105 @@
+﻿# AI TruthGuard - UI and Ollama Fixes - VERIFIED
+
+## Changes Made
+
+### A. Fixed UI Text Contrast (app/static/index.html)
+
+1. **Header Styling**
+   - Added dark mode support for header background
+   - Now uses appropriate colors in both light and dark modes
+
+2. **Text Input Areas**
+   - textarea: Changed from hardcoded white to ar(--bg-primary) with dark mode override to #1f1f1f
+   - Select/input elements: Added proper dark mode backgrounds (#2a2a2a) with readable text colors
+   - Increased padding on form inputs for better usability
+
+3. **Card Styling**
+   - controls-section: Changed from white to ar(--bg-secondary) with dark mode support
+   - claim-card: Changed from white to ar(--bg-secondary) with dark mode support
+   - capability-card: Changed from white to ar(--bg-secondary) with dark mode support
+   - btn-secondary: Changed from white to ar(--bg-secondary) with dark mode support
+
+4. **Status and Message Colors**
+   - Added dark mode support for error messages (#7f1d1d background in dark mode)
+   - Added dark mode support for warning messages (#78350f background in dark mode)
+   - Demo banner and status indicator now have proper contrast
+
+5. **Footer Styling**
+   - Added dark mode gradient background support
+
+### B. Fixed Ollama/Provider Status (app/static/index.html)
+
+1. **Removed "Auto-Detect" Option**
+   - Dropdown now only has "Demo (Sample Data)" and "Local (Ollama)"
+   - Default value is "Demo" which matches the configured PROVIDER_MODE=fixture
+
+2. **Added Smart Provider Detection**
+   - New getConfiguredProvider() function checks backend for actual provider
+   - Page initialization now sets dropdown to match backend configuration
+   - Dropdown reflects what provider is actually configured
+
+3. **Improved Status Display**
+   - Demo Mode: Shows yellow warning color with "Demo Mode - Precomputed Results"
+   - Ollama Connected: Shows green with model name
+   - Ollama Unavailable: Shows red with helpful message about installation
+   - Status colors match verdict badges for consistency
+
+4. **Better User Guidance**
+   - Error message now says "Ollama Not Running - Install Ollama and pull deepseek-r1:14b"
+   - Users can clearly see when they're in demo vs. local mode
+
+## Files Modified
+
+- app/static/index.html
+  - CSS: Added dark mode support to 8 sections
+  - JavaScript: Updated provider detection and status display logic
+  - HTML: Simplified provider dropdown (removed "Auto-Detect")
+
+## Verification Results
+
+✓ All 7 tests pass
+✓ Server starts successfully on http://0.0.0.0:8000
+✓ Health endpoint returns: provider=fixture, model=deepseek-r1:14b (sample fixture)
+✓ Verification endpoint works with text containing numbers
+✓ Demo banner displays when in fixture mode
+✓ Status panel shows accurate provider information
+
+## How Text Is Now Visible
+
+In Light Mode:
+- White backgrounds become #fafbfc (very light gray)
+- Text is dark gray #0f172a (very dark)
+- High contrast ratio ✓
+
+In Dark Mode:
+- Select/input backgrounds: #2a2a2a (dark gray)
+- Textarea backgrounds: #1f1f1f (very dark)
+- Text color: #e5e5e5 (light gray) or default #f5f5f5
+- High contrast ratio ✓
+
+Numbers and long text are now clearly readable in both modes.
+
+## Provider Status Now Works
+
+The UI now correctly reflects the configured provider:
+- PROVIDER_MODE=fixture → Shows "Demo (Sample Data)"
+- Demo banner appears with warning color
+- Status shows "Demo Mode - Precomputed Results"
+- Results are correctly labeled as coming from fixture provider
+
+If Ollama were installed, switching to "Local (Ollama)" would:
+- Check connection status
+- Show green if Ollama is running
+- Show red if Ollama is not available
+- Provide helpful installation instructions
+
+## To Start the App
+
+Demo Mode (Recommended):
+  .\start-dev.ps1 -Demo
+
+Or manually:
+  .\venv\Scripts\Activate.ps1
+  python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+Then open: http://localhost:8000

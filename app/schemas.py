@@ -78,3 +78,44 @@ class ReadinessResponse(BaseModel):
     model: Optional[str] = None
     corpus_loaded: bool
     message: str
+
+
+class SignUpRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = Field(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    password: str = Field(..., min_length=8)
+
+
+class SignInRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    created_at: str
+
+
+class VerificationHistoryItem(BaseModel):
+    id: int
+    request_id: str
+    text_preview: str
+    total_claims: int
+    supported_count: int
+    refuted_count: int
+    insufficient_evidence_count: int
+    abstain_count: int
+    provider: str
+    model: str
+    latency_ms: float
+    created_at: str
+
+
+class DashboardResponse(BaseModel):
+    user: UserResponse
+    total_verifications: int
+    total_claims_processed: int
+    average_latency_ms: float
+    recent_history: List[VerificationHistoryItem]

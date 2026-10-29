@@ -13,19 +13,20 @@
         }
 
         :root {
-            --bg-primary: #fafbfc;
-            --bg-secondary: #f3f5f7;
-            --bg-tertiary: #eef1f5;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-tertiary: #64748b;
             --accent: #0891b2;
             --accent-dark: #0e7490;
             --accent-light: #cffafe;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
             --border: #e2e8f0;
-            --success: #16a34a;
-            --warning: #ea580c;
-            --error: #dc2626;
             --supported: #22c55e;
             --refuted: #ef4444;
             --insufficient: #f59e0b;
@@ -33,36 +34,29 @@
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-primary: #0f0f0f;
-                --bg-secondary: #1a1a1a;
-                --text-primary: #f5f5f5;
-                --text-secondary: #b0b0b0;
                 --accent: #14b8a6;
-                --accent-light: #0d4f47;
-                --border: #2a2a2a;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
+                --accent-dark: #0d9488;
+                --accent-light: #0d474a;
+                --bg-primary: #0f172a;
+                --bg-secondary: #1a2332;
+                --bg-tertiary: #2a3f5f;
+                --text-primary: #f1f5f9;
+                --text-secondary: #cbd5e1;
+                --text-tertiary: #94a3b8;
+                --border: #334155;
             }
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            background-attachment: fixed;
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }
 
-        /* Header and Navigation */
         header {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
             padding: 1rem 2rem;
@@ -72,8 +66,14 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
+        @media (prefers-color-scheme: dark) {
+            header {
+                background: rgba(15, 23, 42, 0.95);
+            }
+        }
+
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -95,9 +95,10 @@
             letter-spacing: -0.5px;
         }
 
-        .logo:hover {
-            opacity: 0.85;
-            transform: scale(1.02);
+        .nav-container {
+            display: flex;
+            gap: 3rem;
+            align-items: center;
         }
 
         .nav-links {
@@ -111,30 +112,62 @@
             text-decoration: none;
             cursor: pointer;
             transition: color 0.2s;
+            font-size: 0.95rem;
         }
 
         .nav-links a:hover, .nav-links a.active {
             color: var(--accent);
         }
 
-        /* Demo Banner */
-        .demo-banner {
-            background-color: var(--insufficient);
-            color: white;
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
             padding: 0.75rem 1.5rem;
-            text-align: center;
-            font-size: 0.875rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
             font-weight: 500;
-            display: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .demo-banner.show {
-            display: block;
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(8, 145, 178, 0.25);
         }
 
-        /* Main Container */
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(8, 145, 178, 0.35);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         main {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
         }
@@ -151,6 +184,108 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        }
+
+        /* Auth Pages */
+        .auth-container {
+            max-width: 420px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .auth-container h1 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 1.75rem;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(8, 145, 178, 0.35);
+        }
+
+        .auth-link {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #fca5a5;
+            display: none;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .error-message {
+                background-color: #7f1d1d;
+                color: #fca5a5;
+                border-color: #dc2626;
+            }
         }
 
         /* Landing Page */
@@ -173,7 +308,7 @@
         }
 
         .landing-hero p {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             color: var(--text-secondary);
             margin-bottom: 2rem;
             max-width: 650px;
@@ -191,47 +326,6 @@
             flex-wrap: wrap;
         }
 
-        button, .btn {
-            padding: 0.875rem 1.75rem;
-            border: none;
-            border-radius: 0.625rem;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-block;
-            letter-spacing: 0.3px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(8, 145, 178, 0.25);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(8, 145, 178, 0.35);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            background-color: white;
-            color: var(--text-primary);
-            border: 2px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--bg-tertiary);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* Capabilities Grid */
         .capabilities {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -240,7 +334,7 @@
         }
 
         .capability-card {
-            background-color: white;
+            background-color: var(--bg-secondary);
             padding: 2rem;
             border-radius: 0.75rem;
             border: 1px solid var(--border);
@@ -295,17 +389,17 @@
             font-family: 'Inter', inherit;
             font-size: 0.95rem;
             resize: none;
-            background-color: white;
+            background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: all 0.3s ease;
             line-height: 1.6;
+            min-height: 300px;
         }
 
         textarea:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
-            background-color: #f8fdff;
         }
 
         .char-count {
@@ -315,14 +409,14 @@
         }
 
         .examples {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
 
         .examples label {
             display: block;
             font-size: 0.875rem;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             font-weight: 500;
         }
 
@@ -333,7 +427,7 @@
         }
 
         .example-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             background-color: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 0.375rem;
@@ -352,7 +446,7 @@
 
         .controls-section {
             padding: 2rem;
-            background-color: white;
+            background-color: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 0.75rem;
             display: flex;
@@ -374,27 +468,40 @@
         }
 
         .control-group select, .control-group input {
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid var(--border);
             border-radius: 0.375rem;
             background-color: var(--bg-primary);
             color: var(--text-primary);
+            font-size: 0.9rem;
         }
 
-        .ollama-status {
+        .status-badge {
             padding: 1rem;
             border-radius: 0.5rem;
-            background-color: var(--accent-light);
-            color: var(--text-primary);
             font-size: 0.875rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            border: 1px solid var(--border);
         }
 
-        .ollama-status.offline {
+        .status-badge.demo {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-color: #fcd34d;
+        }
+
+        .status-badge.ready {
+            background-color: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .status-badge.unavailable {
             background-color: #fee2e2;
-            color: var(--error);
+            color: #991b1b;
+            border-color: #fca5a5;
         }
 
         .status-indicator {
@@ -402,21 +509,24 @@
             width: 0.5rem;
             height: 0.5rem;
             border-radius: 50%;
-            background-color: var(--success);
+            background-color: currentColor;
+            animation: pulse 2s infinite;
         }
 
-        .ollama-status.offline .status-indicator {
-            background-color: var(--error);
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .verify-button {
-            background-color: var(--accent);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             padding: 1rem;
             font-size: 1rem;
             font-weight: 600;
             width: 100%;
             border-radius: 0.5rem;
+            border: none;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -431,30 +541,7 @@
             cursor: not-allowed;
         }
 
-        /* Loading State */
-        .loading-spinner {
-            border: 3px solid var(--border);
-            border-top: 3px solid var(--accent);
-            border-radius: 50%;
-            width: 2rem;
-            height: 2rem;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-state {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            justify-content: center;
-            padding: 2rem;
-        }
-
-        /* Results View */
+        /* Results */
         .results-container {
             display: flex;
             flex-direction: column;
@@ -505,7 +592,7 @@
         }
 
         .claim-card {
-            background-color: white;
+            background-color: var(--bg-secondary);
             padding: 2rem;
             border-radius: 0.75rem;
             border: 1px solid var(--border);
@@ -541,33 +628,31 @@
             white-space: nowrap;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            border: 1px solid transparent;
         }
 
         .verdict-badge.supported {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 100%);
             color: #15803d;
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.3);
         }
 
         .verdict-badge.refuted {
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
             color: #991b1b;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.3);
         }
 
         .verdict-badge.insufficient {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
             color: #92400e;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-color: rgba(245, 158, 11, 0.3);
         }
 
         .verdict-badge.abstain {
             background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(100, 116, 139, 0.05) 100%);
             color: #334155;
-            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-color: rgba(100, 116, 139, 0.3);
         }
 
         .confidence-band {
@@ -651,6 +736,7 @@
             border-radius: 0.5rem;
             cursor: pointer;
             transition: all 0.2s;
+            color: var(--text-primary);
         }
 
         .export-btn:hover {
@@ -658,7 +744,7 @@
             background-color: var(--accent-light);
         }
 
-        /* Evaluation Dashboard */
+        /* Dashboard */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -685,7 +771,32 @@
             color: var(--text-primary);
         }
 
-        /* Footer */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+
+        .history-table th {
+            background-color: var(--bg-tertiary);
+            padding: 1rem;
+            text-align: left;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .history-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .history-table tr:hover {
+            background-color: var(--bg-tertiary);
+        }
+
         footer {
             background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(243,245,247,0.8) 100%);
             border-top: 1px solid var(--border);
@@ -697,7 +808,34 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Responsive */
+        @media (prefers-color-scheme: dark) {
+            footer {
+                background: linear-gradient(180deg, rgba(20,20,20,0.5) 0%, rgba(15,15,15,0.8) 100%);
+            }
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: center;
+            padding: 2rem;
+        }
+
         @media (max-width: 768px) {
             .landing-hero h1 {
                 font-size: 2rem;
@@ -711,52 +849,48 @@
                 flex-direction: column;
             }
 
-            .cta-buttons button {
+            .cta-buttons .btn {
                 width: 100%;
             }
 
             .nav-links {
                 display: none;
             }
-        }
 
-        /* Error State */
-        .error-message {
-            background-color: #fee2e2;
-            color: var(--error);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid #fca5a5;
-        }
+            .auth-buttons {
+                gap: 0.5rem;
+            }
 
-        /* Warning State */
-        .warning-message {
-            background-color: #fef3c7;
-            color: var(--warning);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid #fcd34d;
+            .btn-small {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="demo-banner" id="demoBanner">
-        ⚠️ Sample demo — results are precomputed; no live model inference
-    </div>
-
     <header>
         <div class="header-content">
             <a class="logo" onclick="showView('landing')">🛡️ AI TruthGuard</a>
-            <nav>
-                <ul class="nav-links">
-                    <li><a onclick="showView('landing')">Home</a></li>
-                    <li><a onclick="showView('verify')">Verify</a></li>
-                    <li><a onclick="showView('dashboard')">Evaluation</a></li>
-                    <li><a onclick="showView('about')">About</a></li>
-                </ul>
-            </nav>
+            <div class="nav-container">
+                <nav id="mainNav">
+                    <ul class="nav-links">
+                        <li><a onclick="showView('landing')">Home</a></li>
+                        <li><a onclick="showView('verify')">Verify</a></li>
+                        <li id="dashboardLink" style="display:none;"><a onclick="showView('dashboard')">Dashboard</a></li>
+                        <li><a onclick="showView('about')">About</a></li>
+                    </ul>
+                </nav>
+                <div class="auth-buttons">
+                    <button id="signInBtn" class="btn btn-secondary btn-small" onclick="showView('signin')">Sign In</button>
+                    <button id="signUpBtn" class="btn btn-primary btn-small" onclick="showView('signup')">Sign Up</button>
+                    <button id="userMenuBtn" style="display:none;" class="btn btn-secondary btn-small" onclick="toggleUserMenu()">👤 <span id="userNameDisplay">User</span></button>
+                    <div id="userMenu" style="display:none; position: absolute; top: 60px; right: 20px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 150px; z-index: 200;">
+                        <button onclick="showView('dashboard')" style="width: 100%; padding: 0.75rem; text-align: left; border: none; background: none; cursor: pointer; color: var(--text-primary);">Dashboard</button>
+                        <button onclick="signOut()" style="width: 100%; padding: 0.75rem; text-align: left; border: none; background: none; cursor: pointer; color: var(--text-primary); border-top: 1px solid var(--border);">Sign Out</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -771,7 +905,7 @@
 
                 <div class="cta-buttons">
                     <button class="btn btn-primary" onclick="showView('verify')">Start Checking Claims</button>
-                    <button class="btn btn-secondary" onclick="loadDemoExample('supported')">Explore Demo</button>
+                    <button class="btn btn-secondary" onclick="showView('about')">Learn More</button>
                 </div>
 
                 <div class="capabilities">
@@ -795,17 +929,69 @@
             </div>
         </section>
 
+        <!-- Sign Up View -->
+        <section class="view" id="signup-view">
+            <div class="auth-container">
+                <h1>Create Account</h1>
+                <div id="signupError" class="error-message"></div>
+                <form onsubmit="handleSignUp(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="signupUsername" required minlength="3" maxlength="50" placeholder="Choose a username">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signupEmail" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signupPassword" required minlength="8" placeholder="At least 8 characters">
+                    </div>
+                    <button type="submit" class="auth-button">Create Account</button>
+                </form>
+                <div class="auth-link">
+                    Already have an account? <a onclick="showView('signin')">Sign In</a>
+                </div>
+                <div class="auth-link">
+                    <a onclick="showView('landing')">Back to Home</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sign In View -->
+        <section class="view" id="signin-view">
+            <div class="auth-container">
+                <h1>Sign In</h1>
+                <div id="signinError" class="error-message"></div>
+                <form onsubmit="handleSignIn(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="signinUsername" required placeholder="Your username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signinPassword" required placeholder="Your password">
+                    </div>
+                    <button type="submit" class="auth-button">Sign In</button>
+                </form>
+                <div class="auth-link">
+                    Don't have an account? <a onclick="showView('signup')">Create One</a>
+                </div>
+                <div class="auth-link">
+                    <a onclick="showView('landing')">Back to Home</a>
+                </div>
+            </div>
+        </section>
+
         <!-- Verification View -->
         <section class="view" id="verify-view">
             <h1 style="margin-bottom: 2rem;">Verification Workspace</h1>
-
             <div class="verification-container">
                 <div class="input-section">
                     <h2>Submit Text</h2>
                     <textarea
                         id="inputText"
-                        placeholder="Paste text containing claims to verify..."
-                        style="min-height: 300px;"
+                        placeholder="Paste text containing claims to verify. Example: 'DeepSeek-R1 is a 14 billion parameter model released in 2024.'"
                     ></textarea>
                     <div class="char-count">
                         <span id="charCount">0</span> / <span id="maxChars">5000</span> characters
@@ -814,9 +1000,9 @@
                     <div class="examples">
                         <label>Quick Examples:</label>
                         <div class="example-buttons">
-                            <button class="example-btn" onclick="loadDemoExample('supported')">✓ Supported Claim</button>
-                            <button class="example-btn" onclick="loadDemoExample('refuted')">✗ Refuted Claim</button>
-                            <button class="example-btn" onclick="loadDemoExample('insufficient')">? Insufficient Evidence</button>
+                            <button type="button" class="example-btn" onclick="loadExample('Python is a programming language.')">Example 1</button>
+                            <button type="button" class="example-btn" onclick="loadExample('The Earth is flat.')">Example 2</button>
+                            <button type="button" class="example-btn" onclick="loadExample('Paris is the capital of France.')">Example 3</button>
                         </div>
                     </div>
                 </div>
@@ -824,27 +1010,22 @@
                 <div class="controls-section">
                     <h2 style="margin-bottom: 0;">Settings</h2>
 
+                    <div id="statusBadge" class="status-badge demo">
+                        <span class="status-indicator"></span>
+                        <span id="statusText">Loading provider status...</span>
+                    </div>
+
                     <div class="control-group">
                         <label>Inference Mode</label>
-                        <select id="providerMode" onchange="updateModeDisplay()">
-                            <option value="auto">Auto-Detect</option>
-                            <option value="local">Local (Ollama)</option>
-                            <option value="fixture">Demo (Sample Data)</option>
+                        <select id="providerMode" onchange="updateProviderStatus()">
+                            <option value="fixture">Demo (Sample Results)</option>
+                            <option value="local">Local Ollama</option>
                         </select>
                     </div>
 
                     <div class="control-group">
                         <label>Evidence Count</label>
                         <input type="number" id="topK" value="5" min="1" max="10">
-                    </div>
-
-                    <div id="ollamaStatus" class="ollama-status">
-                        <span class="status-indicator"></span>
-                        Checking Ollama connection...
-                    </div>
-
-                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        <strong>Privacy:</strong> In local mode, text is processed by your local Ollama instance and not sent to external servers.
                     </div>
 
                     <button class="verify-button" id="verifyBtn" onclick="verifyText()">Verify Claims</button>
@@ -859,40 +1040,59 @@
                 <button class="btn btn-secondary" onclick="showView('verify')">Verify Another Text</button>
             </div>
 
-            <div id="resultsError" class="error-message" style="display: none;"></div>
-
             <div id="resultsContainer" class="results-container"></div>
 
             <div class="export-buttons">
                 <button class="export-btn" onclick="exportMarkdown()">📄 Download Markdown</button>
                 <button class="export-btn" onclick="exportJSON()">📋 Download JSON</button>
-                <button class="btn btn-secondary" onclick="showView('dashboard')">View Evaluation Metrics</button>
             </div>
         </section>
 
         <!-- Dashboard View -->
         <section class="view" id="dashboard-view">
-            <h1 style="margin-bottom: 2rem;">Evaluation Dashboard</h1>
+            <h1 style="margin-bottom: 2rem;">Your Dashboard</h1>
 
-            <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">Test Suite Status</h3>
-                <div id="dashboardContent">
-                    <div class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <span>Loading evaluation data...</span>
-                    </div>
+            <div class="dashboard-grid" id="dashboardMetrics">
+                <div class="metric-card">
+                    <div class="metric-label">Total Verifications</div>
+                    <div class="metric-value" id="totalVerifications">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Claims Processed</div>
+                    <div class="metric-value" id="totalClaims">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Average Latency</div>
+                    <div class="metric-value" id="avgLatency">0ms</div>
                 </div>
             </div>
 
-            <button class="btn btn-secondary" onclick="showView('landing')">Back to Home</button>
+            <h2 style="margin-top: 2rem; margin-bottom: 1rem;">Recent Verifications</h2>
+            <table class="history-table" id="historyTable" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Text Preview</th>
+                        <th>Provider</th>
+                        <th>Claims</th>
+                        <th>Result</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+            <div id="noHistoryMessage" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                No verifications yet. <a style="color: var(--accent); cursor: pointer;" onclick="showView('verify')">Start verifying claims</a>
+            </div>
+
+            <button class="btn btn-secondary" style="margin-top: 2rem;" onclick="showView('landing')">Back to Home</button>
         </section>
 
         <!-- About View -->
         <section class="view" id="about-view">
-            <h1 style="margin-bottom: 2rem;">System Overview</h1>
+            <h1 style="margin-bottom: 2rem;">About AI TruthGuard</h1>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+            <div class="dashboard-grid">
+                <div class="metric-card">
                     <h3 style="margin-bottom: 1rem; color: var(--accent);">How It Works</h3>
                     <ol style="margin-left: 1.5rem; color: var(--text-secondary);">
                         <li style="margin-bottom: 0.75rem;">Extract claims from input text</li>
@@ -902,23 +1102,23 @@
                     </ol>
                 </div>
 
-                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <div class="metric-card">
                     <h3 style="margin-bottom: 1rem; color: var(--accent);">Verdict Types</h3>
                     <ul style="margin-left: 1.5rem; color: var(--text-secondary);">
                         <li style="margin-bottom: 0.75rem;"><strong>SUPPORTED:</strong> Evidence supports the claim</li>
                         <li style="margin-bottom: 0.75rem;"><strong>REFUTED:</strong> Evidence contradicts the claim</li>
-                        <li style="margin-bottom: 0.75rem;"><strong>NOT ENOUGH EVIDENCE:</strong> Insufficient data to decide</li>
+                        <li style="margin-bottom: 0.75rem;"><strong>INSUFFICIENT:</strong> Insufficient data to decide</li>
                         <li style="margin-bottom: 0.75rem;"><strong>ABSTAIN:</strong> Cannot confidently classify</li>
                     </ul>
                 </div>
 
-                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
-                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Local Inference</h3>
+                <div class="metric-card">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Privacy & Security</h3>
                     <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        When in local mode, TruthGuard uses Ollama to run model inference on your machine. DeepSeek-R1 14B processes each claim against retrieved evidence.
+                        When using local Ollama mode, all text is processed on your machine and never sent to external servers.
                     </p>
                     <p style="color: var(--text-secondary); font-size: 0.875rem;">
-                        Your input text is not sent to external servers or stored.
+                        Your input text is not stored permanently. Only verification results are saved if you create an account.
                     </p>
                 </div>
             </div>
@@ -934,36 +1134,165 @@
     <script>
         const API_BASE = window.location.origin;
         let lastVerificationResponse = null;
+        let currentUser = null;
 
-        // View Management
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('inputText')?.addEventListener('input', (e) => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
+
+            checkAuth();
+            updateProviderStatus();
+        });
+
         function showView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewName + '-view').classList.add('active');
 
-            if (viewName === 'dashboard') {
+            if (viewName === 'dashboard' && currentUser) {
                 loadDashboard();
             }
         }
 
-        // Character Counter
-        document.getElementById('inputText')?.addEventListener('input', (e) => {
-            document.getElementById('charCount').textContent = e.target.value.length;
-        });
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
 
-        // Load Demo Examples
-        function loadDemoExample(type) {
-            const examples = {
-                supported: "DeepSeek-R1 is a 14 billion parameter model.",
-                refuted: "DeepSeek-R1 is an open source model with unlimited usage.",
-                insufficient: "DeepSeek-R1 is the most efficient model available."
-            };
+        // Auth Functions
+        async function checkAuth() {
+            try {
+                const response = await fetch(API_BASE + '/api/auth/me');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    updateUIForAuthenticatedUser();
+                } else {
+                    updateUIForAnonymousUser();
+                }
+            } catch (error) {
+                updateUIForAnonymousUser();
+            }
+        }
 
-            document.getElementById('inputText').value = examples[type];
-            document.getElementById('charCount').textContent = examples[type].length;
+        function updateUIForAuthenticatedUser() {
+            document.getElementById('signInBtn').style.display = 'none';
+            document.getElementById('signUpBtn').style.display = 'none';
+            document.getElementById('userMenuBtn').style.display = 'inline-flex';
+            document.getElementById('userNameDisplay').textContent = currentUser.username;
+            document.getElementById('dashboardLink').style.display = 'block';
+        }
+
+        function updateUIForAnonymousUser() {
+            document.getElementById('signInBtn').style.display = 'inline-block';
+            document.getElementById('signUpBtn').style.display = 'inline-block';
+            document.getElementById('userMenuBtn').style.display = 'none';
+            document.getElementById('dashboardLink').style.display = 'none';
+        }
+
+        async function handleSignUp(event) {
+            event.preventDefault();
+            const errorDiv = document.getElementById('signupError');
+            errorDiv.style.display = 'none';
+
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const response = await fetch(API_BASE + '/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Sign up failed');
+                }
+
+                alert('Account created! Please sign in.');
+                showView('signin');
+            } catch (error) {
+                errorDiv.textContent = '❌ ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function handleSignIn(event) {
+            event.preventDefault();
+            const errorDiv = document.getElementById('signinError');
+            errorDiv.style.display = 'none';
+
+            const username = document.getElementById('signinUsername').value;
+            const password = document.getElementById('signinPassword').value;
+
+            try {
+                const response = await fetch(API_BASE + '/api/auth/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid username or password');
+                }
+
+                await checkAuth();
+                showView('verify');
+            } catch (error) {
+                errorDiv.textContent = '❌ ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function signOut() {
+            try {
+                await fetch(API_BASE + '/api/auth/signout', { method: 'POST', credentials: 'include' });
+                currentUser = null;
+                updateUIForAnonymousUser();
+                showView('landing');
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        }
+
+        // Provider Status
+        async function updateProviderStatus() {
+            try {
+                const response = await fetch(API_BASE + '/readyz');
+                const data = await response.json();
+                const badge = document.getElementById('statusBadge');
+                const statusText = document.getElementById('statusText');
+
+                const mode = document.getElementById('providerMode').value;
+
+                if (mode === 'fixture') {
+                    badge.className = 'status-badge demo';
+                    statusText.textContent = '📋 Demo Mode - Precomputed Results';
+                } else {
+                    if (data.ready) {
+                        badge.className = 'status-badge ready';
+                        statusText.textContent = '✓ Ollama Connected - ' + data.model;
+                    } else {
+                        badge.className = 'status-badge unavailable';
+                        statusText.textContent = '✗ Ollama Unavailable - Switch to Demo Mode';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('statusBadge').className = 'status-badge unavailable';
+                document.getElementById('statusText').textContent = '✗ Status Check Failed';
+            }
+        }
+
+        // Verification
+        function loadExample(text) {
+            document.getElementById('inputText').value = text;
+            document.getElementById('charCount').textContent = text.length;
             showView('verify');
         }
 
-        // Verify Text
         async function verifyText() {
             const text = document.getElementById('inputText').value.trim();
 
@@ -980,6 +1309,7 @@
                 const response = await fetch(API_BASE + '/v1/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({
                         text: text,
                         mode: document.getElementById('providerMode').value,
@@ -997,18 +1327,16 @@
                 showView('results');
             } catch (error) {
                 alert('Error: ' + error.message);
-                console.error(error);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Verify Claims';
             }
         }
 
-        // Display Results
         function displayResults(data) {
             const container = document.getElementById('resultsContainer');
 
-            const summaryHTML = `
+            let html = `
                 <div class="summary-cards">
                     <div class="summary-card">
                         <h3>Total Claims</h3>
@@ -1029,29 +1357,23 @@
                 </div>
             `;
 
-            let claimsHTML = '<div class="claims-list">';
+            html += '<div class="claims-list">';
             data.claims.forEach((claim, idx) => {
                 const verdictClass = claim.verdict.toLowerCase().replace(/_/g, '-');
                 const hasEvidence = claim.evidence && claim.evidence.length > 0;
 
-                claimsHTML += `
+                html += `
                     <div class="claim-card">
                         <div class="claim-header">
                             <div class="claim-text">Claim ${idx + 1}: ${claim.claim_text}</div>
                             <div class="verdict-badge ${verdictClass}">${claim.verdict}</div>
                         </div>
-
-                        <div class="confidence-band">
-                            <strong>Confidence:</strong> ${claim.confidence}
-                        </div>
-
+                        <div class="confidence-band"><strong>Confidence:</strong> ${claim.confidence}</div>
                         <div class="explanation">${claim.explanation}</div>
-
                         ${hasEvidence ? `
                             <div class="evidence-section">
-                                <button class="evidence-toggle" onclick="this.parentElement.querySelector('.evidence-list').style.display = this.parentElement.querySelector('.evidence-list').style.display === 'none' ? 'flex' : 'none'">
-                                    📚 Evidence (${claim.evidence.length})
-                                    <span>▼</span>
+                                <button class="evidence-toggle" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'flex' : 'none'">
+                                    📚 Evidence (${claim.evidence.length})<span>▼</span>
                                 </button>
                                 <div class="evidence-list" style="display: none;">
                                     ${claim.evidence.map(e => `
@@ -1059,7 +1381,6 @@
                                             <div class="evidence-source">[${e.source_id}] ${e.source_title}</div>
                                             <div class="evidence-excerpt">"${e.excerpt}"</div>
                                             <div class="evidence-meta">
-                                                ${e.section ? `<span>Section: ${e.section}</span>` : ''}
                                                 ${e.relevance_score ? `<span>Relevance: ${(e.relevance_score * 100).toFixed(0)}%</span>` : ''}
                                             </div>
                                         </div>
@@ -1067,31 +1388,24 @@
                                 </div>
                             </div>
                         ` : ''}
-
-                        ${claim.model_warning ? `
-                            <div class="warning-message" style="margin-top: 1rem;">
-                                ⚠️ ${claim.model_warning}
-                            </div>
-                        ` : ''}
                     </div>
                 `;
             });
-            claimsHTML += '</div>';
+            html += '</div>';
 
-            const metadataHTML = `
+            const providerLabel = data.provider === 'fixture' ? 'Demo (Sample Results)' : 'Ollama (Live Inference)';
+            html += `
                 <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
                     <strong>Request ID:</strong> ${data.request_id}<br>
-                    <strong>Provider:</strong> ${data.provider}<br>
+                    <strong>Provider:</strong> ${providerLabel}<br>
                     <strong>Model:</strong> ${data.model}<br>
-                    <strong>Latency:</strong> ${data.latency_ms.toFixed(2)}ms<br>
-                    <strong>Corpus Version:</strong> ${data.corpus_version}
+                    <strong>Latency:</strong> ${data.latency_ms.toFixed(2)}ms
                 </div>
             `;
 
-            container.innerHTML = summaryHTML + claimsHTML + metadataHTML;
+            container.innerHTML = html;
         }
 
-        // Export Functions
         function exportMarkdown() {
             if (!lastVerificationResponse) return;
 
@@ -1099,28 +1413,17 @@
             md += `**Request ID:** ${lastVerificationResponse.request_id}\n`;
             md += `**Provider:** ${lastVerificationResponse.provider}\n`;
             md += `**Model:** ${lastVerificationResponse.model}\n\n`;
-
             md += `## Summary\n\n`;
             md += `- Total Claims: ${lastVerificationResponse.total_claims}\n`;
             md += `- Supported: ${lastVerificationResponse.supported_count}\n`;
             md += `- Refuted: ${lastVerificationResponse.refuted_count}\n`;
             md += `- Insufficient Evidence: ${lastVerificationResponse.insufficient_evidence_count}\n\n`;
 
-            md += `## Claims\n\n`;
             lastVerificationResponse.claims.forEach((claim, idx) => {
-                md += `### Claim ${idx + 1}\n\n`;
+                md += `## Claim ${idx + 1}\n\n`;
                 md += `**Text:** ${claim.claim_text}\n\n`;
                 md += `**Verdict:** ${claim.verdict}\n\n`;
-                md += `**Confidence:** ${claim.confidence}\n\n`;
                 md += `**Explanation:** ${claim.explanation}\n\n`;
-
-                if (claim.evidence && claim.evidence.length > 0) {
-                    md += `**Evidence:**\n\n`;
-                    claim.evidence.forEach(e => {
-                        md += `- [${e.source_id}] ${e.source_title}: "${e.excerpt}"\n`;
-                    });
-                    md += '\n';
-                }
             });
 
             const blob = new Blob([md], { type: 'text/markdown' });
@@ -1142,99 +1445,38 @@
             a.click();
         }
 
-        // Load Dashboard
         async function loadDashboard() {
             try {
-                const response = await fetch(API_BASE + '/metrics');
-                const metrics = await response.json();
+                const response = await fetch(API_BASE + '/api/dashboard', { credentials: 'include' });
+                if (!response.ok) throw new Error('Failed to load dashboard');
 
-                let html = `
-                    <div class="dashboard-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Total Requests Processed</div>
-                            <div class="metric-value">${metrics.total_requests}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Total Claims Verified</div>
-                            <div class="metric-value">${metrics.total_claims_processed}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Average Latency</div>
-                            <div class="metric-value">${metrics.latency_avg_ms.toFixed(0)}ms</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">P95 Latency</div>
-                            <div class="metric-value">${metrics.latency_p95_ms.toFixed(0)}ms</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Model Failures</div>
-                            <div class="metric-value">${metrics.model_failures}</div>
-                        </div>
-                    </div>
+                const data = await response.json();
+                document.getElementById('totalVerifications').textContent = data.total_verifications;
+                document.getElementById('totalClaims').textContent = data.total_claims_processed;
+                document.getElementById('avgLatency').textContent = data.average_latency_ms.toFixed(0) + 'ms';
 
-                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Verdict Distribution</h3>
-                    <div class="dashboard-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Supported</div>
-                            <div class="metric-value" style="color: var(--supported);">${metrics.verdict_distribution.SUPPORTED}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Refuted</div>
-                            <div class="metric-value" style="color: var(--refuted);">${metrics.verdict_distribution.REFUTED}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Not Enough Evidence</div>
-                            <div class="metric-value" style="color: var(--insufficient);">${metrics.verdict_distribution.NOT_ENOUGH_EVIDENCE}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Abstain</div>
-                            <div class="metric-value">${metrics.verdict_distribution.ABSTAIN}</div>
-                        </div>
-                    </div>
-                `;
+                if (data.recent_history.length > 0) {
+                    document.getElementById('noHistoryMessage').style.display = 'none';
+                    document.getElementById('historyTable').style.display = 'table';
 
-                document.getElementById('dashboardContent').innerHTML = html;
-            } catch (error) {
-                console.error('Dashboard load error:', error);
-                document.getElementById('dashboardContent').innerHTML = '<p style="color: var(--error);">Failed to load metrics</p>';
-            }
-        }
-
-        // Update Mode Display
-        async function updateModeDisplay() {
-            const mode = document.getElementById('providerMode').value;
-            const statusDiv = document.getElementById('ollamaStatus');
-
-            if (mode === 'fixture') {
-                document.getElementById('demoBanner').classList.add('show');
-                statusDiv.innerHTML = '<span class="status-indicator"></span> Demo Mode - Precomputed Results';
-                statusDiv.classList.add('offline');
-            } else {
-                document.getElementById('demoBanner').classList.remove('show');
-                statusDiv.innerHTML = '<div class="loading-spinner" style="width: 1rem; height: 1rem;"></div> Checking Ollama...';
-
-                try {
-                    const response = await fetch(API_BASE + '/healthz');
-                    const health = await response.json();
-
-                    if (health.ollama_reachable) {
-                        statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Connected - ' + health.model;
-                        statusDiv.classList.remove('offline');
-                    } else {
-                        statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Unavailable';
-                        statusDiv.classList.add('offline');
-                    }
-                } catch (error) {
-                    statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Unavailable';
-                    statusDiv.classList.add('offline');
+                    const tbody = document.getElementById('historyBody');
+                    tbody.innerHTML = data.recent_history.map(h => `
+                        <tr>
+                            <td>${h.text_preview}</td>
+                            <td>${h.provider}</td>
+                            <td>${h.total_claims}</td>
+                            <td>✓ ${h.supported_count} ✗ ${h.refuted_count}</td>
+                            <td>${new Date(h.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    document.getElementById('noHistoryMessage').style.display = 'block';
+                    document.getElementById('historyTable').style.display = 'none';
                 }
+            } catch (error) {
+                console.error('Dashboard error:', error);
             }
         }
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', () => {
-            updateModeDisplay();
-        });
     </script>
 </body>
 </html>
