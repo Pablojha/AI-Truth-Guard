@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PROVIDER_MODE=local
+      - OLLAMA_API_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=deepseek-r1:14b
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:8000
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      - frontend
+    networks:
+      - truthguard
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./app/static:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - truthguard
+
+networks:
+  truthguard:
+    driver: bridge

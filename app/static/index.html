@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI TruthGuard - Evidence-Based Claim Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #faf8f5;
+            --bg-secondary: #f0ede8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #4a4a4a;
+            --accent: #0d9488;
+            --accent-light: #d1fae5;
+            --border: #e5e0d8;
+            --success: #059669;
+            --warning: #d97706;
+            --error: #dc2626;
+            --supported: #10b981;
+            --refuted: #ef4444;
+            --insufficient: #f59e0b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0f0f0f;
+                --bg-secondary: #1a1a1a;
+                --text-primary: #f5f5f5;
+                --text-secondary: #b0b0b0;
+                --accent: #14b8a6;
+                --accent-light: #0d4f47;
+                --border: #2a2a2a;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header and Navigation */
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent);
+        }
+
+        /* Demo Banner */
+        .demo-banner {
+            background-color: var(--insufficient);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .demo-banner.show {
+            display: block;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Landing Page */
+        .landing {
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .landing-hero {
+            margin-bottom: 3rem;
+        }
+
+        .landing-hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .landing-hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        button, .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent);
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border);
+        }
+
+        /* Capabilities Grid */
+        .capabilities {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .capability-card {
+            background-color: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .capability-card h3 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+
+        .capability-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Verification Workspace */
+        .verification-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .verification-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-section h2 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        textarea {
+            flex: 1;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+
+        .char-count {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .examples {
+            margin-top: 1rem;
+        }
+
+        .examples label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .example-btn {
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            text-align: left;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .example-btn:hover {
+            border-color: var(--accent);
+            background-color: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .controls-section {
+            padding: 1.5rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .control-group select, .control-group input {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .ollama-status {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: var(--accent-light);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ollama-status.offline {
+            background-color: #fee2e2;
+            color: var(--error);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: var(--success);
+        }
+
+        .ollama-status.offline .status-indicator {
+            background-color: var(--error);
+        }
+
+        .verify-button {
+            background-color: var(--accent);
+            color: white;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .verify-button:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .verify-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        /* Results View */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .summary-card {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid var(--accent);
+        }
+
+        .summary-card.supported {
+            border-left-color: var(--supported);
+        }
+
+        .summary-card.refuted {
+            border-left-color: var(--refuted);
+        }
+
+        .summary-card.insufficient {
+            border-left-color: var(--insufficient);
+        }
+
+        .summary-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .claims-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .claim-card {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            transition: box-shadow 0.2s;
+        }
+
+        .claim-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .claim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .claim-text {
+            flex: 1;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .verdict-badge {
+            padding: 0.375rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .verdict-badge.supported {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--supported);
+        }
+
+        .verdict-badge.refuted {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--refuted);
+        }
+
+        .verdict-badge.insufficient {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--insufficient);
+        }
+
+        .verdict-badge.abstain {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .confidence-band {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .explanation {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .evidence-section {
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        .evidence-toggle {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .evidence-toggle:hover {
+            opacity: 0.8;
+        }
+
+        .evidence-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .evidence-card {
+            background-color: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border-left: 3px solid var(--accent);
+            font-size: 0.875rem;
+        }
+
+        .evidence-source {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .evidence-excerpt {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-style: italic;
+        }
+
+        .evidence-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            border-color: var(--accent);
+            background-color: var(--accent-light);
+        }
+
+        /* Evaluation Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .landing-hero h1 {
+                font-size: 2rem;
+            }
+
+            .landing-hero p {
+                font-size: 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .cta-buttons button {
+                width: 100%;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* Error State */
+        .error-message {
+            background-color: #fee2e2;
+            color: var(--error);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #fca5a5;
+        }
+
+        /* Warning State */
+        .warning-message {
+            background-color: #fef3c7;
+            color: var(--warning);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #fcd34d;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-banner" id="demoBanner">
+        ⚠️ Sample demo — results are precomputed; no live model inference
+    </div>
+
+    <header>
+        <div class="header-content">
+            <a class="logo" onclick="showView('landing')">🛡️ AI TruthGuard</a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a onclick="showView('landing')">Home</a></li>
+                    <li><a onclick="showView('verify')">Verify</a></li>
+                    <li><a onclick="showView('dashboard')">Evaluation</a></li>
+                    <li><a onclick="showView('about')">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Landing View -->
+        <section class="view active" id="landing-view">
+            <div class="landing">
+                <div class="landing-hero">
+                    <h1>AI TruthGuard</h1>
+                    <p>Evidence-based claim verification powered by local AI inference</p>
+                </div>
+
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" onclick="showView('verify')">Start Checking Claims</button>
+                    <button class="btn btn-secondary" onclick="loadDemoExample('supported')">Explore Demo</button>
+                </div>
+
+                <div class="capabilities">
+                    <div class="capability-card">
+                        <h3>📋 Claim Extraction</h3>
+                        <p>Automatically extract factual claims from text for verification</p>
+                    </div>
+                    <div class="capability-card">
+                        <h3>📚 Evidence Citations</h3>
+                        <p>Each verdict is grounded in source passages with full attribution</p>
+                    </div>
+                    <div class="capability-card">
+                        <h3>🔢 Numeric Checks</h3>
+                        <p>Verify arithmetic consistency and detect numerical anomalies</p>
+                    </div>
+                    <div class="capability-card">
+                        <h3>⚙️ Local Inference</h3>
+                        <p>Run verification locally via Ollama—your data never leaves your machine</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Verification View -->
+        <section class="view" id="verify-view">
+            <h1 style="margin-bottom: 2rem;">Verification Workspace</h1>
+
+            <div class="verification-container">
+                <div class="input-section">
+                    <h2>Submit Text</h2>
+                    <textarea
+                        id="inputText"
+                        placeholder="Paste text containing claims to verify..."
+                        style="min-height: 300px;"
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span> / <span id="maxChars">5000</span> characters
+                    </div>
+
+                    <div class="examples">
+                        <label>Quick Examples:</label>
+                        <div class="example-buttons">
+                            <button class="example-btn" onclick="loadDemoExample('supported')">✓ Supported Claim</button>
+                            <button class="example-btn" onclick="loadDemoExample('refuted')">✗ Refuted Claim</button>
+                            <button class="example-btn" onclick="loadDemoExample('insufficient')">? Insufficient Evidence</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h2 style="margin-bottom: 0;">Settings</h2>
+
+                    <div class="control-group">
+                        <label>Inference Mode</label>
+                        <select id="providerMode" onchange="updateModeDisplay()">
+                            <option value="auto">Auto-Detect</option>
+                            <option value="local">Local (Ollama)</option>
+                            <option value="fixture">Demo (Sample Data)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Evidence Count</label>
+                        <input type="number" id="topK" value="5" min="1" max="10">
+                    </div>
+
+                    <div id="ollamaStatus" class="ollama-status">
+                        <span class="status-indicator"></span>
+                        Checking Ollama connection...
+                    </div>
+
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        <strong>Privacy:</strong> In local mode, text is processed by your local Ollama instance and not sent to external servers.
+                    </div>
+
+                    <button class="verify-button" id="verifyBtn" onclick="verifyText()">Verify Claims</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results View -->
+        <section class="view" id="results-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h1>Verification Results</h1>
+                <button class="btn btn-secondary" onclick="showView('verify')">Verify Another Text</button>
+            </div>
+
+            <div id="resultsError" class="error-message" style="display: none;"></div>
+
+            <div id="resultsContainer" class="results-container"></div>
+
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportMarkdown()">📄 Download Markdown</button>
+                <button class="export-btn" onclick="exportJSON()">📋 Download JSON</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')">View Evaluation Metrics</button>
+            </div>
+        </section>
+
+        <!-- Dashboard View -->
+        <section class="view" id="dashboard-view">
+            <h1 style="margin-bottom: 2rem;">Evaluation Dashboard</h1>
+
+            <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Test Suite Status</h3>
+                <div id="dashboardContent">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <span>Loading evaluation data...</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showView('landing')">Back to Home</button>
+        </section>
+
+        <!-- About View -->
+        <section class="view" id="about-view">
+            <h1 style="margin-bottom: 2rem;">System Overview</h1>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">How It Works</h3>
+                    <ol style="margin-left: 1.5rem; color: var(--text-secondary);">
+                        <li style="margin-bottom: 0.75rem;">Extract claims from input text</li>
+                        <li style="margin-bottom: 0.75rem;">Retrieve supporting evidence passages</li>
+                        <li style="margin-bottom: 0.75rem;">Verify each claim using evidence</li>
+                        <li style="margin-bottom: 0.75rem;">Report verdicts with citations</li>
+                    </ol>
+                </div>
+
+                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Verdict Types</h3>
+                    <ul style="margin-left: 1.5rem; color: var(--text-secondary);">
+                        <li style="margin-bottom: 0.75rem;"><strong>SUPPORTED:</strong> Evidence supports the claim</li>
+                        <li style="margin-bottom: 0.75rem;"><strong>REFUTED:</strong> Evidence contradicts the claim</li>
+                        <li style="margin-bottom: 0.75rem;"><strong>NOT ENOUGH EVIDENCE:</strong> Insufficient data to decide</li>
+                        <li style="margin-bottom: 0.75rem;"><strong>ABSTAIN:</strong> Cannot confidently classify</li>
+                    </ul>
+                </div>
+
+                <div style="background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Local Inference</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        When in local mode, TruthGuard uses Ollama to run model inference on your machine. DeepSeek-R1 14B processes each claim against retrieved evidence.
+                    </p>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">
+                        Your input text is not sent to external servers or stored.
+                    </p>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" style="margin-top: 2rem;" onclick="showView('landing')">Back to Home</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 AI TruthGuard. Evidence-based claim verification for the MLOps era.</p>
+    </footer>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let lastVerificationResponse = null;
+
+        // View Management
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewName + '-view').classList.add('active');
+
+            if (viewName === 'dashboard') {
+                loadDashboard();
+            }
+        }
+
+        // Character Counter
+        document.getElementById('inputText')?.addEventListener('input', (e) => {
+            document.getElementById('charCount').textContent = e.target.value.length;
+        });
+
+        // Load Demo Examples
+        function loadDemoExample(type) {
+            const examples = {
+                supported: "DeepSeek-R1 is a 14 billion parameter model.",
+                refuted: "DeepSeek-R1 is an open source model with unlimited usage.",
+                insufficient: "DeepSeek-R1 is the most efficient model available."
+            };
+
+            document.getElementById('inputText').value = examples[type];
+            document.getElementById('charCount').textContent = examples[type].length;
+            showView('verify');
+        }
+
+        // Verify Text
+        async function verifyText() {
+            const text = document.getElementById('inputText').value.trim();
+
+            if (!text) {
+                alert('Please enter text to verify');
+                return;
+            }
+
+            const btn = document.getElementById('verifyBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><div class="loading-spinner"></div> Verifying...</div>';
+
+            try {
+                const response = await fetch(API_BASE + '/v1/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        mode: document.getElementById('providerMode').value,
+                        top_k: parseInt(document.getElementById('topK').value)
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Verification failed');
+                }
+
+                lastVerificationResponse = await response.json();
+                displayResults(lastVerificationResponse);
+                showView('results');
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Verify Claims';
+            }
+        }
+
+        // Display Results
+        function displayResults(data) {
+            const container = document.getElementById('resultsContainer');
+
+            const summaryHTML = `
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3>Total Claims</h3>
+                        <div class="number">${data.total_claims}</div>
+                    </div>
+                    <div class="summary-card supported">
+                        <h3>Supported</h3>
+                        <div class="number">${data.supported_count}</div>
+                    </div>
+                    <div class="summary-card refuted">
+                        <h3>Refuted</h3>
+                        <div class="number">${data.refuted_count}</div>
+                    </div>
+                    <div class="summary-card insufficient">
+                        <h3>Insufficient Evidence</h3>
+                        <div class="number">${data.insufficient_evidence_count}</div>
+                    </div>
+                </div>
+            `;
+
+            let claimsHTML = '<div class="claims-list">';
+            data.claims.forEach((claim, idx) => {
+                const verdictClass = claim.verdict.toLowerCase().replace(/_/g, '-');
+                const hasEvidence = claim.evidence && claim.evidence.length > 0;
+
+                claimsHTML += `
+                    <div class="claim-card">
+                        <div class="claim-header">
+                            <div class="claim-text">Claim ${idx + 1}: ${claim.claim_text}</div>
+                            <div class="verdict-badge ${verdictClass}">${claim.verdict}</div>
+                        </div>
+
+                        <div class="confidence-band">
+                            <strong>Confidence:</strong> ${claim.confidence}
+                        </div>
+
+                        <div class="explanation">${claim.explanation}</div>
+
+                        ${hasEvidence ? `
+                            <div class="evidence-section">
+                                <button class="evidence-toggle" onclick="this.parentElement.querySelector('.evidence-list').style.display = this.parentElement.querySelector('.evidence-list').style.display === 'none' ? 'flex' : 'none'">
+                                    📚 Evidence (${claim.evidence.length})
+                                    <span>▼</span>
+                                </button>
+                                <div class="evidence-list" style="display: none;">
+                                    ${claim.evidence.map(e => `
+                                        <div class="evidence-card">
+                                            <div class="evidence-source">[${e.source_id}] ${e.source_title}</div>
+                                            <div class="evidence-excerpt">"${e.excerpt}"</div>
+                                            <div class="evidence-meta">
+                                                ${e.section ? `<span>Section: ${e.section}</span>` : ''}
+                                                ${e.relevance_score ? `<span>Relevance: ${(e.relevance_score * 100).toFixed(0)}%</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${claim.model_warning ? `
+                            <div class="warning-message" style="margin-top: 1rem;">
+                                ⚠️ ${claim.model_warning}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            claimsHTML += '</div>';
+
+            const metadataHTML = `
+                <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <strong>Request ID:</strong> ${data.request_id}<br>
+                    <strong>Provider:</strong> ${data.provider}<br>
+                    <strong>Model:</strong> ${data.model}<br>
+                    <strong>Latency:</strong> ${data.latency_ms.toFixed(2)}ms<br>
+                    <strong>Corpus Version:</strong> ${data.corpus_version}
+                </div>
+            `;
+
+            container.innerHTML = summaryHTML + claimsHTML + metadataHTML;
+        }
+
+        // Export Functions
+        function exportMarkdown() {
+            if (!lastVerificationResponse) return;
+
+            let md = `# Verification Report\n\n`;
+            md += `**Request ID:** ${lastVerificationResponse.request_id}\n`;
+            md += `**Provider:** ${lastVerificationResponse.provider}\n`;
+            md += `**Model:** ${lastVerificationResponse.model}\n\n`;
+
+            md += `## Summary\n\n`;
+            md += `- Total Claims: ${lastVerificationResponse.total_claims}\n`;
+            md += `- Supported: ${lastVerificationResponse.supported_count}\n`;
+            md += `- Refuted: ${lastVerificationResponse.refuted_count}\n`;
+            md += `- Insufficient Evidence: ${lastVerificationResponse.insufficient_evidence_count}\n\n`;
+
+            md += `## Claims\n\n`;
+            lastVerificationResponse.claims.forEach((claim, idx) => {
+                md += `### Claim ${idx + 1}\n\n`;
+                md += `**Text:** ${claim.claim_text}\n\n`;
+                md += `**Verdict:** ${claim.verdict}\n\n`;
+                md += `**Confidence:** ${claim.confidence}\n\n`;
+                md += `**Explanation:** ${claim.explanation}\n\n`;
+
+                if (claim.evidence && claim.evidence.length > 0) {
+                    md += `**Evidence:**\n\n`;
+                    claim.evidence.forEach(e => {
+                        md += `- [${e.source_id}] ${e.source_title}: "${e.excerpt}"\n`;
+                    });
+                    md += '\n';
+                }
+            });
+
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'verification_report.md';
+            a.click();
+        }
+
+        function exportJSON() {
+            if (!lastVerificationResponse) return;
+
+            const blob = new Blob([JSON.stringify(lastVerificationResponse, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'verification_report.json';
+            a.click();
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const response = await fetch(API_BASE + '/metrics');
+                const metrics = await response.json();
+
+                let html = `
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Total Requests Processed</div>
+                            <div class="metric-value">${metrics.total_requests}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Claims Verified</div>
+                            <div class="metric-value">${metrics.total_claims_processed}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Average Latency</div>
+                            <div class="metric-value">${metrics.latency_avg_ms.toFixed(0)}ms</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">P95 Latency</div>
+                            <div class="metric-value">${metrics.latency_p95_ms.toFixed(0)}ms</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Model Failures</div>
+                            <div class="metric-value">${metrics.model_failures}</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Verdict Distribution</h3>
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Supported</div>
+                            <div class="metric-value" style="color: var(--supported);">${metrics.verdict_distribution.SUPPORTED}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Refuted</div>
+                            <div class="metric-value" style="color: var(--refuted);">${metrics.verdict_distribution.REFUTED}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Not Enough Evidence</div>
+                            <div class="metric-value" style="color: var(--insufficient);">${metrics.verdict_distribution.NOT_ENOUGH_EVIDENCE}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Abstain</div>
+                            <div class="metric-value">${metrics.verdict_distribution.ABSTAIN}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('dashboardContent').innerHTML = html;
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                document.getElementById('dashboardContent').innerHTML = '<p style="color: var(--error);">Failed to load metrics</p>';
+            }
+        }
+
+        // Update Mode Display
+        async function updateModeDisplay() {
+            const mode = document.getElementById('providerMode').value;
+            const statusDiv = document.getElementById('ollamaStatus');
+
+            if (mode === 'fixture') {
+                document.getElementById('demoBanner').classList.add('show');
+                statusDiv.innerHTML = '<span class="status-indicator"></span> Demo Mode - Precomputed Results';
+                statusDiv.classList.add('offline');
+            } else {
+                document.getElementById('demoBanner').classList.remove('show');
+                statusDiv.innerHTML = '<div class="loading-spinner" style="width: 1rem; height: 1rem;"></div> Checking Ollama...';
+
+                try {
+                    const response = await fetch(API_BASE + '/healthz');
+                    const health = await response.json();
+
+                    if (health.ollama_reachable) {
+                        statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Connected - ' + health.model;
+                        statusDiv.classList.remove('offline');
+                    } else {
+                        statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Unavailable';
+                        statusDiv.classList.add('offline');
+                    }
+                } catch (error) {
+                    statusDiv.innerHTML = '<span class="status-indicator"></span> Ollama Unavailable';
+                    statusDiv.classList.add('offline');
+                }
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateModeDisplay();
+        });
+    </script>
+</body>
+</html>
