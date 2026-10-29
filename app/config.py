@@ -30,13 +30,25 @@ class Config:
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     # CORS
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
 
-    # Database
+    # Database (PostgreSQL for production, SQLite for development)
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./truthguard.db")
+
+    # For Vercel production, convert postgres:// to postgresql://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
     # Security
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+
+    # Payments (UPI)
+    UPI_ID = os.getenv("UPI_ID", "")
+    UPI_PAYEE_NAME = os.getenv("UPI_PAYEE_NAME", "AI TruthGuard")
+    ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+
+    # Production check
+    IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 
 
 config = Config()

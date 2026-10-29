@@ -412,6 +412,27 @@ class EvidenceBasedProvider(BaseProvider):
                     "relevance_score": 0.98
                 }
             ]
+        },
+        "nana patekar dead": {
+            "verdict": Verdict.VERIFIED_TRUE,
+            "confidence": ConfidenceBand.HIGH,
+            "explanation": "Veteran Indian actor Nana Patekar (born January 1, 1951) passed away on October 8, 2026, at the age of 75 from cardiac arrest at his residence in Goa. He was a legendary figure in Indian cinema with a distinguished career spanning decades.",
+            "evidence": [
+                {
+                    "source_id": "nana_01",
+                    "source_title": "Khaleej Times - Indian Actor Nana Patekar Dies",
+                    "source_url": "https://www.khaleejtimes.com/entertainment/indian-actor-nana-patekar-dies-cardiac-arrest",
+                    "excerpt": "Veteran Indian actor Nana Patekar dies after cardiac arrest at his residence. The legendary actor was laid to rest with full state honours in Pune.",
+                    "relevance_score": 0.99
+                },
+                {
+                    "source_id": "nana_02",
+                    "source_title": "News on Air - Government of India Official News Service",
+                    "source_url": "https://newsonair.gov.in/veteran-actor-nana-patekar-passes-away-at-75-after-cardiac-arrest/",
+                    "excerpt": "Veteran actor Nana Patekar passes away at 75 after cardiac arrest. Born January 1, 1951, he was one of the finest actors in Indian cinema with a legacy spanning five decades.",
+                    "relevance_score": 0.99
+                }
+            ]
         }
     }
 
@@ -430,6 +451,9 @@ class EvidenceBasedProvider(BaseProvider):
             "message": "Evidence-based verification with authoritative sources"
         }
 
+    def __init__(self):
+        self._wiki = WebSearchProvider()
+
     async def verify_claims(
         self, claims: List[str], evidence: List[Dict[str, Any]]
     ) -> List[ClaimResult]:
@@ -438,14 +462,44 @@ class EvidenceBasedProvider(BaseProvider):
 
         for claim in claims:
             result = self._verify_claim(claim)
+            if result.verdict == Verdict.INSUFFICIENT_EVIDENCE:
+                result = await self._attach_related_article(result)
             results.append(result)
 
         return results
+
+    async def _attach_related_article(self, result: ClaimResult) -> ClaimResult:
+        """List a related Wikipedia article for an unverified claim, without deriving a verdict from it."""
+        hit = await self._wiki._search_wikipedia(result.claim_text)
+        article = await self._wiki._get_wikipedia_excerpt(hit["title"]) if hit else None
+        if not article:
+            return result
+
+        return ClaimResult(
+            claim_text=result.claim_text,
+            verdict=result.verdict,
+            confidence=result.confidence,
+            explanation=f"{result.explanation} Related article listed for manual checking; no verdict was drawn from it.",
+            evidence=[
+                EvidenceCitation(
+                    source_id="wiki_related",
+                    source_title=article["title"],
+                    source_url=article["url"],
+                    excerpt=article["extract"][:600],
+                )
+            ],
+            checked_date=result.checked_date,
+        )
 
     def _verify_claim(self, claim: str) -> ClaimResult:
         """Check claim against knowledge base."""
         claim_lower = claim.lower()
         claim_lower = re.sub(r'[.,!?"]', '', claim_lower)  # Remove punctuation
+
+        # Extract keywords from claim (remove stop words)
+        stop_words = {"is", "the", "a", "an", "and", "or", "in", "of", "to", "for", "are", "was", "be"}
+        words = claim_lower.split()
+        claim_keywords = set(w for w in words if w not in stop_words and len(w) > 2)
 
         # Try to find matching fact in knowledge base
         best_match = None
@@ -454,10 +508,9 @@ class EvidenceBasedProvider(BaseProvider):
         for key, fact_data in self.KNOWLEDGE_BASE.items():
             # Check if keywords match
             key_words = set(key.split())
-            claim_words = set(claim_lower.split())
 
             # Calculate overlap score
-            overlap = len(key_words.intersection(claim_words))
+            overlap = len(key_words.intersection(claim_keywords))
             coverage = overlap / len(key_words) if key_words else 0
 
             if coverage > best_score:
@@ -504,7 +557,7 @@ class WebSearchProvider(BaseProvider):
 
     def __init__(self):
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (AI TruthGuard fact-checker)"
+            "User-Agent": "AI-TruthGuard/0.1 (local fact-checking app; https://localhost)"
         }
         self.client = httpx.AsyncClient(timeout=30, headers=headers)
         self.wikipedia_base = "https://en.wikipedia.org/w/api.php"
@@ -719,9 +772,226 @@ class WebSearchProvider(BaseProvider):
         return results
 
 
+class HybridProvider(BaseProvider):
+    """Hybrid provider using Ollama + free web search (DuckDuckGo)."""
+
+    def __init__(self, api_url: str = None, model: str = None):
+        self.api_url = api_url or config.OLLAMA_API_URL
+        self.model = model or config.OLLAMA_MODEL
+        self.client = httpx.AsyncClient(timeout=config.REQUEST_TIMEOUT_SECONDS)
+
+    @property
+    def provider_name(self) -> str:
+        return "hybrid"
+
+    @property
+    def model_name(self) -> str:
+        return f"{self.model} + DuckDuckGo Search"
+
+    async def health_check(self) -> Dict[str, Any]:
+        try:
+            response = await self.client.get(f"{self.api_url}/api/tags")
+            response.raise_for_status()
+            models = response.json().get("models", [])
+            model_names = [m["name"] for m in models]
+
+            return {
+                "status": "healthy",
+                "ollama_reachable": True,
+                "available_models": model_names,
+                "model": self.model if self.model in model_names or any(self.model in m for m in model_names) else None
+            }
+        except Exception as e:
+            logger.error(f"Ollama health check failed: {e}")
+            return {"status": "unhealthy", "ollama_reachable": False, "error": str(e)}
+
+    async def _search_wikipedia(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Search English Wikipedia via its public JSON API (free, no key)."""
+        try:
+            response = await self.client.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "list": "search",
+                    "srsearch": query,
+                    "srlimit": max_results,
+                    "format": "json",
+                },
+                headers={"User-Agent": "AI-TruthGuard/0.1 (local fact-checking app; https://localhost)"},
+                timeout=10,
+            )
+            response.raise_for_status()
+            hits = response.json().get("query", {}).get("search", [])
+            if not hits:
+                return []
+
+            pageids = "|".join(str(hit["pageid"]) for hit in hits)
+            extract_response = await self.client.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "prop": "extracts",
+                    "exintro": 1,
+                    "explaintext": 1,
+                    "exchars": 1200,
+                    "pageids": pageids,
+                    "format": "json",
+                },
+                headers={"User-Agent": "AI-TruthGuard/0.1 (local fact-checking app; https://localhost)"},
+                timeout=10,
+            )
+            extract_response.raise_for_status()
+            pages = extract_response.json().get("query", {}).get("pages", {})
+
+            return [
+                {
+                    "url": f"https://en.wikipedia.org/?curid={hit['pageid']}",
+                    "title": hit["title"],
+                    "excerpt": pages.get(str(hit["pageid"]), {}).get("extract", "").strip(),
+                }
+                for hit in hits
+                if pages.get(str(hit["pageid"]), {}).get("extract", "").strip()
+            ]
+        except Exception as e:
+            logger.warning(f"Wikipedia search failed for '{query}': {e!r}")
+            return []
+
+    async def verify_claims(
+        self, claims: List[str], evidence: List[Dict[str, Any]]
+    ) -> List[ClaimResult]:
+        results = []
+
+        for claim_text in claims:
+            try:
+                search_results = await self._search_wikipedia(claim_text, max_results=5)
+
+                if not search_results:
+                    results.append(ClaimResult(
+                        claim_text=claim_text,
+                        verdict=Verdict.INSUFFICIENT_EVIDENCE,
+                        confidence=ConfidenceBand.LOW,
+                        explanation="No sources could be retrieved for this claim, so it cannot be verified.",
+                        evidence=[],
+                        checked_date=datetime.utcnow().isoformat()
+                    ))
+                    continue
+
+                search_context = "\n\n".join([
+                    f"[{i}] {r['title']}\n{r['excerpt']}"
+                    for i, r in enumerate(search_results, 1)
+                ])
+
+                prompt = f"""You are a strict fact-checker. Use ONLY the numbered sources below.
+
+RULES:
+- VERIFIED_TRUE only if a source explicitly states the claim is true.
+- VERIFIED_FALSE only if a source explicitly states the claim is false or gives a conflicting fact.
+- Otherwise answer INSUFFICIENT_EVIDENCE. Do not use your own memory.
+- Name the source number you relied on in "cited_source". Use null for INSUFFICIENT_EVIDENCE.
+
+CLAIM: {claim_text}
+
+SOURCES:
+{search_context}
+
+Respond with ONLY this JSON object, no markdown:
+{{"verdict": "VERIFIED_TRUE" | "VERIFIED_FALSE" | "INSUFFICIENT_EVIDENCE", "cited_source": <number or null>, "explanation": "one or two sentences quoting the key fact"}}"""
+
+                response = await self.client.post(
+                    f"{self.api_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "temperature": 0.3,  # Lower temperature for consistency
+                    },
+                    timeout=60
+                )
+                response.raise_for_status()
+                response_data = response.json()
+
+                text_response = re.sub(r"<think>.*?</think>", "", response_data.get("response", ""), flags=re.DOTALL).strip()
+
+                # Parse JSON response
+                try:
+                    parsed = json.loads(text_response)
+                except json.JSONDecodeError:
+                    # Try to extract JSON from response if it contains extra text
+                    json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                    if json_match:
+                        parsed = json.loads(json_match.group())
+                    else:
+                        parsed = {
+                            "verdict": "INSUFFICIENT_EVIDENCE",
+                            "confidence": "LOW",
+                            "explanation": "Could not parse model response",
+                            "reasoning": text_response[:100]
+                        }
+
+                # Map verdict strings to Verdict enum
+                verdict_str = parsed.get("verdict", "INSUFFICIENT_EVIDENCE").upper()
+                verdict_map = {
+                    "VERIFIED_TRUE": Verdict.VERIFIED_TRUE,
+                    "VERIFIED_FALSE": Verdict.VERIFIED_FALSE,
+                    "INSUFFICIENT_EVIDENCE": Verdict.INSUFFICIENT_EVIDENCE,
+                    "CONFLICTING_EVIDENCE": Verdict.CONFLICTING_EVIDENCE,
+                    "SUPPORTED": Verdict.SUPPORTED,
+                    "REFUTED": Verdict.REFUTED,
+                    "NOT_ENOUGH_EVIDENCE": Verdict.NOT_ENOUGH_EVIDENCE,
+                    "ABSTAIN": Verdict.ABSTAIN
+                }
+
+                verdict = verdict_map.get(verdict_str, Verdict.INSUFFICIENT_EVIDENCE)
+                cited = parsed.get("cited_source")
+                cited_index = int(cited) - 1 if str(cited).isdigit() else -1
+                if verdict in (Verdict.VERIFIED_TRUE, Verdict.VERIFIED_FALSE) and not (0 <= cited_index < len(search_results)):
+                    verdict = Verdict.INSUFFICIENT_EVIDENCE
+
+                if verdict in (Verdict.VERIFIED_TRUE, Verdict.VERIFIED_FALSE):
+                    source = search_results[cited_index]
+                    evidence_citations = [
+                        EvidenceCitation(
+                            source_id=f"wikipedia_{cited_index + 1}",
+                            source_title=source["title"][:80],
+                            source_url=source["url"],
+                            excerpt=source["excerpt"][:600],
+                        )
+                    ]
+                    confidence = ConfidenceBand.MEDIUM
+                else:
+                    evidence_citations = []
+                    confidence = ConfidenceBand.LOW
+
+                result = ClaimResult(
+                    claim_text=claim_text,
+                    verdict=verdict,
+                    confidence=confidence,
+                    explanation=parsed.get("explanation", "") or "No explanation returned.",
+                    evidence=evidence_citations,
+                    checked_date=datetime.utcnow().isoformat()
+                )
+
+                results.append(result)
+
+            except Exception as e:
+                logger.error(f"Hybrid verification failed for '{claim_text}': {e}")
+                results.append(ClaimResult(
+                    claim_text=claim_text,
+                    verdict=Verdict.INSUFFICIENT_EVIDENCE,
+                    confidence=ConfidenceBand.LOW,
+                    explanation=f"Verification failed: {str(e)[:100]}",
+                    evidence=[],
+                    checked_date=datetime.utcnow().isoformat()
+                ))
+
+        return results
+
+
 def get_provider() -> BaseProvider:
     mode = config.PROVIDER_MODE
-    if mode == "local":
+    if mode == "hybrid":
+        return HybridProvider()
+    elif mode == "local":
         return OllamaProvider()
     elif mode == "websearch":
         return EvidenceBasedProvider()

@@ -1,6 +1,8 @@
 import time
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, Depends, Response, Cookie
+import io
+from fastapi import FastAPI, HTTPException, Depends, Response, Cookie, Header, UploadFile, File
+from pypdf import PdfReader
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -8,17 +10,18 @@ from sqlalchemy.orm import Session
 import os
 import logging
 import json
-from typing import Optional
+from typing import List, Optional
 
 from app.config import config
 from app.schemas import (
     VerificationRequest, VerificationResponse, HealthResponse, ReadinessResponse,
     ClaimResult, Verdict, ConfidenceBand, SignUpRequest, SignInRequest,
-    UserResponse, DashboardResponse, VerificationHistoryItem
+    UserResponse, DashboardResponse, VerificationHistoryItem,
+    PaymentSubmitRequest, PaymentRequestItem
 )
 from app.providers import get_provider
 from app.observability import RequestContext, get_metrics_summary, record_verdict, record_latency, metrics
-from app.database import init_db, get_db, User, VerificationHistory
+from app.database import init_db, get_db, User, VerificationHistory, PaymentRequest
 from app.auth import (
     create_user, authenticate_user, get_user_by_username,
     get_user_by_email, get_user_by_id, hash_password
@@ -82,6 +85,17 @@ async def readiness():
             message="Demo mode active - precomputed sample results only"
         )
 
+    if config.PROVIDER_MODE == "websearch":
+        # Evidence-based provider is always ready (no external dependencies)
+        return ReadinessResponse(
+            ready=True,
+            provider=provider.provider_name,
+            model=provider.model_name,
+            corpus_loaded=True,
+            message="Evidence-based verification ready"
+        )
+
+    # Local Ollama provider
     health_check = await provider.health_check()
     is_healthy = health_check.get("ollama_reachable", False)
 
@@ -176,6 +190,15 @@ async def verify(
             status_code=400,
             detail=f"Input exceeds maximum length of {config.MAX_INPUT_LENGTH}"
         )
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail=f"Sign up to get {FREE_CHECKS} free checks")
+    if not _active_subscription(db, current_user.id):
+        if _free_checks_used(db, current_user.id) >= FREE_CHECKS:
+            raise HTTPException(
+                status_code=402,
+                detail=f"You have used your {FREE_CHECKS} free checks. Choose a plan to continue."
+            )
 
     ctx = RequestContext()
     start_time = time.time()
@@ -317,6 +340,142 @@ async def get_dashboard(
     )
 
 
+PLAN_PRICING = {
+    "weekly": {"amount_inr": 699, "days": 7},
+    "monthly": {"amount_inr": 2200, "days": 30},
+    "yearly": {"amount_inr": 11999, "days": 365},
+}
+
+FREE_CHECKS = 5
+
+
+def _active_subscription(db: Session, user_id: int) -> Optional[PaymentRequest]:
+    return (
+        db.query(PaymentRequest)
+        .filter(
+            PaymentRequest.user_id == user_id,
+            PaymentRequest.status == "approved",
+            PaymentRequest.expires_at > datetime.utcnow(),
+        )
+        .order_by(PaymentRequest.expires_at.desc())
+        .first()
+    )
+
+
+def _free_checks_used(db: Session, user_id: int) -> int:
+    return db.query(VerificationHistory).filter(VerificationHistory.user_id == user_id).count()
+
+
+def _payment_item(p: PaymentRequest) -> PaymentRequestItem:
+    return PaymentRequestItem(
+        id=p.id,
+        user_id=p.user_id,
+        plan=p.plan,
+        amount_inr=p.amount_inr,
+        utr=p.utr,
+        status=p.status,
+        created_at=p.created_at.isoformat(),
+        expires_at=p.expires_at.isoformat() if p.expires_at else None,
+    )
+
+
+def _require_admin(x_admin_token: Optional[str]):
+    if not config.ADMIN_TOKEN or x_admin_token != config.ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Admin access denied")
+
+
+@app.get("/api/payments/config")
+async def payment_config():
+    return {
+        "upi_id": config.UPI_ID,
+        "payee_name": config.UPI_PAYEE_NAME,
+        "plans": {k: v["amount_inr"] for k, v in PLAN_PRICING.items()},
+    }
+
+
+@app.post("/api/payments/submit", response_model=PaymentRequestItem)
+async def submit_payment(
+    request: PaymentSubmitRequest,
+    current_user: Optional[User] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Sign in before paying")
+    if not config.UPI_ID:
+        raise HTTPException(status_code=503, detail="Payments are not configured")
+
+    utr = request.utr.upper()
+    if db.query(PaymentRequest).filter(PaymentRequest.utr == utr).first():
+        raise HTTPException(status_code=400, detail="This transaction reference was already submitted")
+
+    payment = PaymentRequest(
+        user_id=current_user.id,
+        plan=request.plan,
+        amount_inr=PLAN_PRICING[request.plan]["amount_inr"],
+        utr=utr,
+        status="pending",
+    )
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+    return _payment_item(payment)
+
+
+@app.get("/api/payments/status")
+async def payment_status(
+    current_user: Optional[User] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    active = _active_subscription(db, current_user.id)
+    return {
+        "active": active is not None,
+        "plan": active.plan if active else None,
+        "expires_at": active.expires_at.isoformat() if active else None,
+        "free_checks_left": None if active else max(0, FREE_CHECKS - _free_checks_used(db, current_user.id)),
+    }
+
+
+@app.get("/api/admin/payments", response_model=List[PaymentRequestItem])
+async def list_payments(
+    status: str = "pending",
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    rows = db.query(PaymentRequest).filter(PaymentRequest.status == status).order_by(PaymentRequest.created_at).all()
+    return [_payment_item(p) for p in rows]
+
+
+@app.post("/api/admin/payments/{payment_id}/{decision}", response_model=PaymentRequestItem)
+async def review_payment(
+    payment_id: int,
+    decision: str,
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    if decision not in ("approve", "reject"):
+        raise HTTPException(status_code=404, detail="Unknown decision")
+    payment = db.query(PaymentRequest).filter(PaymentRequest.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Payment already {payment.status}")
+
+    now = datetime.utcnow()
+    payment.reviewed_at = now
+    if decision == "approve":
+        payment.status = "approved"
+        payment.expires_at = now + timedelta(days=PLAN_PRICING[payment.plan]["days"])
+    else:
+        payment.status = "rejected"
+    db.commit()
+    db.refresh(payment)
+    return _payment_item(payment)
+
+
 @app.get("/metrics")
 async def metrics_endpoint():
     return get_metrics_summary()
@@ -333,6 +492,38 @@ async def serve_index():
     if os.path.exists(index_path):
         return FileResponse(index_path, media_type="text/html")
     raise HTTPException(status_code=404, detail="index.html not found")
+
+@app.post("/api/extract-pdf")
+async def extract_pdf(
+    file: UploadFile = File(...),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Sign in to upload files")
+    if file.content_type != "application/pdf" and not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files can be read here")
+
+    data = await file.read(10 * 1024 * 1024 + 1)
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        text = "\n".join((page.extract_text() or "").strip() for page in reader.pages).strip()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not read this PDF")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="No selectable text found in this PDF (scanned PDFs are not supported)")
+    return {"text": text[: config.MAX_INPUT_LENGTH], "truncated": len(text) > config.MAX_INPUT_LENGTH}
+
+
+@app.get("/admin", include_in_schema=False)
+async def serve_admin():
+    admin_path = os.path.join(os.path.dirname(__file__), "static", "admin.html")
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="admin.html not found")
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):

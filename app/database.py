@@ -1,15 +1,26 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./truthguard.db")
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# Handle postgres:// -> postgresql+psycopg2:// (explicit driver; SQLAlchemy's default changes between versions)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+# Create engine with appropriate settings for SQLite or PostgreSQL
+engine_kwargs = {}
+if "sqlite" in DATABASE_URL:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+elif "postgresql" in DATABASE_URL:
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -42,6 +53,20 @@ class VerificationHistory(Base):
     model = Column(String(255), nullable=False)
     latency_ms = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PaymentRequest(Base):
+    __tablename__ = "payment_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    plan = Column(String(20), nullable=False)
+    amount_inr = Column(Integer, nullable=False)
+    utr = Column(String(32), unique=True, index=True, nullable=False)
+    status = Column(String(20), default="pending", index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    reviewed_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
 
 
 def get_db():

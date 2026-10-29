@@ -126,3 +126,19 @@ class DashboardResponse(BaseModel):
     total_claims_processed: int
     average_latency_ms: float
     recent_history: List[VerificationHistoryItem]
+
+
+class PaymentSubmitRequest(BaseModel):
+    plan: str = Field(..., pattern="^(weekly|monthly|yearly)$")
+    utr: str = Field(..., pattern="^[A-Za-z0-9]{12,22}$")
+
+
+class PaymentRequestItem(BaseModel):
+    id: int
+    user_id: int
+    plan: str
+    amount_inr: int
+    utr: str
+    status: str
+    created_at: str
+    expires_at: Optional[str] = None

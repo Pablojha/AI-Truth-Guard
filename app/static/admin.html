@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthGuard Admin - Payments</title>
+    <style>
+        :root { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --accent: #0891b2; --ok: #16a34a; --bad: #dc2626; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #0f172a; --card: #1a2332; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; --accent: #14b8a6; }
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem 1rem; }
+        main { max-width: 760px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; }
+        input, select { padding: 0.55rem; border: 1px solid var(--border); border-radius: 0.375rem; background: var(--bg); color: var(--text); }
+        .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .grow { flex: 1; min-width: 180px; }
+        button { padding: 0.5rem 0.9rem; border-radius: 0.375rem; border: none; cursor: pointer; color: #fff; background: var(--accent); }
+        button.approve { background: var(--ok); }
+        button.reject { background: var(--bad); }
+        button:disabled { opacity: 0.5; cursor: default; }
+        .item { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--border); padding: 0.75rem 0; }
+        .item:first-child { border-top: none; }
+        .meta { color: var(--muted); font-size: 0.85rem; }
+        .status { font-size: 0.9rem; margin-top: 0.5rem; color: var(--muted); }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Payment approvals</h1>
+
+    <div class="panel">
+        <div class="row">
+            <input id="token" class="grow" type="password" placeholder="Admin token (from .env ADMIN_TOKEN)" autocomplete="off">
+            <select id="filter">
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            <button onclick="loadPayments()">Load</button>
+        </div>
+        <div id="status" class="status">Enter the admin token and load payments. The token is kept only in this page, not saved.</div>
+    </div>
+
+    <div class="panel" id="list"></div>
+</main>
+
+<script>
+    const API_BASE = window.location.origin;
+
+    function setStatus(text) {
+        document.getElementById('status').textContent = text;
+    }
+
+    function renderItem(p) {
+        const row = document.createElement('div');
+        row.className = 'item';
+
+        const info = document.createElement('div');
+        const title = document.createElement('div');
+        title.textContent = `${p.plan} plan - ₹${p.amount_inr.toLocaleString('en-IN')}`;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `UTR ${p.utr} - user #${p.user_id} - submitted ${new Date(p.created_at).toLocaleString()}` +
+            (p.expires_at ? ` - expires ${new Date(p.expires_at).toLocaleDateString()}` : '');
+        info.append(title, meta);
+        row.appendChild(info);
+
+        if (p.status === 'pending') {
+            const actions = document.createElement('div');
+            actions.className = 'row';
+            actions.append(
+                makeButton('Approve', 'approve', () => decide(p.id, 'approve', row)),
+                makeButton('Reject', 'reject', () => decide(p.id, 'reject', row))
+            );
+            row.appendChild(actions);
+        }
+        return row;
+    }
+
+    function makeButton(label, cls, onClick) {
+        const b = document.createElement('button');
+        b.textContent = label;
+        b.className = cls;
+        b.onclick = onClick;
+        return b;
+    }
+
+    async function loadPayments() {
+        const token = document.getElementById('token').value.trim();
+        const filter = document.getElementById('filter').value;
+        const list = document.getElementById('list');
+        list.replaceChildren();
+        if (!token) {
+            setStatus('Enter the admin token first.');
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE}/api/admin/payments?status=${filter}`, {
+                headers: { 'X-Admin-Token': token }
+            });
+            if (response.status === 403) {
+                setStatus('Access denied. Check the admin token.');
+                return;
+            }
+            const payments = await response.json();
+            if (payments.length === 0) {
+                setStatus(`No ${filter} payments.`);
+                return;
+            }
+            setStatus(`${payments.length} ${filter} payment(s).`);
+            payments.forEach(p => list.appendChild(renderItem(p)));
+        } catch (error) {
+            setStatus('Could not reach the server.');
+        }
+    }
+
+    async function decide(id, decision, row) {
+        const token = document.getElementById('token').value.trim();
+        const buttons = row.querySelectorAll('button');
+        buttons.forEach(b => b.disabled = true);
+        try {
+            const response = await fetch(`${API_BASE}/api/admin/payments/${id}/${decision}`, {
+                method: 'POST',
+                headers: { 'X-Admin-Token': token }
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setStatus(data.detail || 'Action failed.');
+                buttons.forEach(b => b.disabled = false);
+                return;
+            }
+            row.remove();
+            setStatus(`Payment #${id} ${data.status}.`);
+        } catch (error) {
+            setStatus('Could not reach the server.');
+            buttons.forEach(b => b.disabled = false);
+        }
+    }
+</script>
+</body>
+</html>
