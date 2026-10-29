@@ -136,9 +136,14 @@ class PaymentSubmitRequest(BaseModel):
 class PaymentRequestItem(BaseModel):
     id: int
     user_id: int
+    username: Optional[str] = None
     plan: str
     amount_inr: int
     utr: str
     status: str
     created_at: str
     expires_at: Optional[str] = None
+
+
+class AutoApproveRequest(BaseModel):
+    enabled: bool

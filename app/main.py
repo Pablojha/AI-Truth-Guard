@@ -6,6 +6,7 @@ from pypdf import PdfReader
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 import os
 import logging
@@ -17,11 +18,11 @@ from app.schemas import (
     VerificationRequest, VerificationResponse, HealthResponse, ReadinessResponse,
     ClaimResult, Verdict, ConfidenceBand, SignUpRequest, SignInRequest,
     UserResponse, DashboardResponse, VerificationHistoryItem,
-    PaymentSubmitRequest, PaymentRequestItem
+    PaymentSubmitRequest, PaymentRequestItem, AutoApproveRequest
 )
 from app.providers import get_provider
 from app.observability import RequestContext, get_metrics_summary, record_verdict, record_latency, metrics
-from app.database import init_db, get_db, User, VerificationHistory, PaymentRequest
+from app.database import init_db, get_db, User, VerificationHistory, PaymentRequest, AppSetting
 from app.auth import (
     create_user, authenticate_user, get_user_by_username,
     get_user_by_email, get_user_by_id, hash_password
@@ -366,10 +367,32 @@ def _free_checks_used(db: Session, user_id: int) -> int:
     return db.query(VerificationHistory).filter(VerificationHistory.user_id == user_id).count()
 
 
-def _payment_item(p: PaymentRequest) -> PaymentRequestItem:
+AUTO_APPROVE_KEY = "auto_approve_payments"
+
+
+def _auto_approve_enabled(db: Session) -> bool:
+    setting = db.query(AppSetting).filter(AppSetting.key == AUTO_APPROVE_KEY).first()
+    return bool(setting and setting.value == "on")
+
+
+def _approve_payment(payment: PaymentRequest, now: datetime):
+    payment.status = "approved"
+    payment.reviewed_at = now
+    payment.expires_at = now + timedelta(days=PLAN_PRICING[payment.plan]["days"])
+
+
+def _usernames(db: Session, user_ids) -> dict:
+    ids = set(user_ids)
+    if not ids:
+        return {}
+    return {u.id: u.username for u in db.query(User).filter(User.id.in_(ids)).all()}
+
+
+def _payment_item(p: PaymentRequest, username: Optional[str] = None) -> PaymentRequestItem:
     return PaymentRequestItem(
         id=p.id,
         user_id=p.user_id,
+        username=username,
         plan=p.plan,
         amount_inr=p.amount_inr,
         utr=p.utr,
@@ -416,9 +439,11 @@ async def submit_payment(
         status="pending",
     )
     db.add(payment)
+    if _auto_approve_enabled(db):
+        _approve_payment(payment, datetime.utcnow())
     db.commit()
     db.refresh(payment)
-    return _payment_item(payment)
+    return _payment_item(payment, current_user.username)
 
 
 @app.get("/api/payments/status")
@@ -445,7 +470,8 @@ async def list_payments(
 ):
     _require_admin(x_admin_token)
     rows = db.query(PaymentRequest).filter(PaymentRequest.status == status).order_by(PaymentRequest.created_at).all()
-    return [_payment_item(p) for p in rows]
+    names = _usernames(db, [p.user_id for p in rows])
+    return [_payment_item(p, names.get(p.user_id)) for p in rows]
 
 
 @app.post("/api/admin/payments/{payment_id}/{decision}", response_model=PaymentRequestItem)
@@ -465,15 +491,92 @@ async def review_payment(
         raise HTTPException(status_code=400, detail=f"Payment already {payment.status}")
 
     now = datetime.utcnow()
-    payment.reviewed_at = now
     if decision == "approve":
-        payment.status = "approved"
-        payment.expires_at = now + timedelta(days=PLAN_PRICING[payment.plan]["days"])
+        _approve_payment(payment, now)
     else:
         payment.status = "rejected"
+        payment.reviewed_at = now
     db.commit()
     db.refresh(payment)
-    return _payment_item(payment)
+    return _payment_item(payment, _usernames(db, [payment.user_id]).get(payment.user_id))
+
+
+@app.post("/api/admin/payments/approve-all")
+async def approve_all_pending(
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    now = datetime.utcnow()
+    pending = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").all()
+    for payment in pending:
+        _approve_payment(payment, now)
+    db.commit()
+    return {"approved": len(pending)}
+
+
+@app.get("/api/admin/summary")
+async def admin_summary(
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    now = datetime.utcnow()
+    counts = dict(db.query(PaymentRequest.status, func.count(PaymentRequest.id)).group_by(PaymentRequest.status).all())
+    approved_rows = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
+    active_users = {p.user_id for p in approved_rows if p.expires_at and p.expires_at > now}
+    return {
+        "pending": counts.get("pending", 0),
+        "approved": counts.get("approved", 0),
+        "rejected": counts.get("rejected", 0),
+        "active_subscriptions": len(active_users),
+        "approved_revenue_inr": sum(p.amount_inr for p in approved_rows),
+        "auto_approve": _auto_approve_enabled(db),
+    }
+
+
+@app.get("/api/admin/subscriptions")
+async def admin_subscriptions(
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    now = datetime.utcnow()
+    rows = (
+        db.query(PaymentRequest)
+        .filter(PaymentRequest.status == "approved", PaymentRequest.expires_at > now)
+        .order_by(PaymentRequest.expires_at.desc())
+        .all()
+    )
+    names = _usernames(db, [p.user_id for p in rows])
+    latest = {}
+    for p in rows:
+        latest.setdefault(p.user_id, p)
+    return [
+        {
+            "user_id": uid,
+            "username": names.get(uid),
+            "plan": p.plan,
+            "expires_at": p.expires_at.isoformat(),
+        }
+        for uid, p in latest.items()
+    ]
+
+
+@app.post("/api/admin/settings/auto-approve")
+async def set_auto_approve(
+    request: AutoApproveRequest,
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(x_admin_token)
+    setting = db.query(AppSetting).filter(AppSetting.key == AUTO_APPROVE_KEY).first()
+    if not setting:
+        setting = AppSetting(key=AUTO_APPROVE_KEY, value="off")
+        db.add(setting)
+    setting.value = "on" if request.enabled else "off"
+    db.commit()
+    return {"auto_approve": request.enabled}
 
 
 @app.get("/metrics")

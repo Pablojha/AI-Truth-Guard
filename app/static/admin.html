@@ -5,140 +5,449 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TruthGuard Admin - Payments</title>
     <style>
-        :root { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --accent: #0891b2; --ok: #16a34a; --bad: #dc2626; }
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+            --accent: #0891b2; --accent-d: #0e7490; --ok: #16a34a; --bad: #dc2626; --warn: #b45309; --chip: #f1f5f9;
+        }
         @media (prefers-color-scheme: dark) {
-            :root { --bg: #0f172a; --card: #1a2332; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; --accent: #14b8a6; }
+            :root {
+                --bg: #0f172a; --card: #1a2332; --text: #f1f5f9; --muted: #94a3b8; --border: #334155;
+                --accent: #14b8a6; --accent-d: #0d9488; --chip: #24324a; --warn: #fbbf24;
+            }
         }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem 1rem; }
-        main { max-width: 760px; margin: 0 auto; }
-        h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+        [hidden] { display: none !important; }
+        body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+        header.top { position: sticky; top: 0; z-index: 10; background: var(--card); border-bottom: 1px solid var(--border); padding: 0.75rem 1rem; }
+        .top-row { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .brand { font-weight: 700; font-size: 1.05rem; margin-right: auto; }
+        main { max-width: 1100px; margin: 1.25rem auto; padding: 0 1rem; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; }
+        .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .value { font-size: 1.6rem; font-weight: 700; margin-top: 0.2rem; }
         .panel { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; }
-        input, select { padding: 0.55rem; border: 1px solid var(--border); border-radius: 0.375rem; background: var(--bg); color: var(--text); }
-        .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; flex-wrap: wrap; }
+        .tab { background: none; color: var(--muted); border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 0.6rem 0.9rem; }
+        .tab:hover { background: none; color: var(--text); }
+        .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+        input[type=text], input[type=password], input[type=search] {
+            padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 0.4rem; background: var(--bg); color: var(--text); min-width: 0;
+        }
         .grow { flex: 1; min-width: 180px; }
-        button { padding: 0.5rem 0.9rem; border-radius: 0.375rem; border: none; cursor: pointer; color: #fff; background: var(--accent); }
-        button.approve { background: var(--ok); }
-        button.reject { background: var(--bad); }
-        button:disabled { opacity: 0.5; cursor: default; }
-        .item { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--border); padding: 0.75rem 0; }
-        .item:first-child { border-top: none; }
-        .meta { color: var(--muted); font-size: 0.85rem; }
-        .status { font-size: 0.9rem; margin-top: 0.5rem; color: var(--muted); }
+        button { padding: 0.5rem 0.85rem; border: none; border-radius: 0.4rem; cursor: pointer; background: var(--accent); color: #fff; font-size: 0.9rem; }
+        button:hover { background: var(--accent-d); }
+        button.ghost { background: var(--chip); color: var(--text); }
+        button.ghost:hover { background: var(--border); }
+        button.ok { background: var(--ok); }
+        button.bad { background: var(--bad); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .row { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0; border-top: 1px solid var(--border); }
+        .row:first-child { border-top: none; }
+        .main { flex: 1; min-width: 0; }
+        .title { font-weight: 600; }
+        .meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; word-break: break-word; }
+        .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+        .badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; background: var(--chip); color: var(--muted); }
+        .badge.pending { background: #fef3c7; color: #92400e; }
+        .badge.approved { background: #dcfce7; color: #166534; }
+        .badge.rejected { background: #fee2e2; color: #991b1b; }
+        .empty { color: var(--muted); padding: 1.5rem 0; text-align: center; }
+        .muted { color: var(--muted); font-size: 0.85rem; }
+        .warn { color: var(--warn); font-size: 0.85rem; margin-top: 0.4rem; }
+        label.inline { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.9rem; }
+        #toasts { position: fixed; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 50; }
+        .toast { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent); padding: 0.6rem 0.9rem; border-radius: 0.4rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); max-width: 340px; font-size: 0.9rem; }
+        .toast.ok { border-left-color: var(--ok); }
+        .toast.err { border-left-color: var(--bad); }
     </style>
 </head>
 <body>
-<main>
-    <h1>Payment approvals</h1>
+<header class="top">
+    <div class="top-row">
+        <div class="brand">TruthGuard Admin</div>
+        <input id="token" type="password" placeholder="Admin token" autocomplete="off" style="width: 220px;">
+        <button id="connectBtn">Connect</button>
+        <label class="inline"><input type="checkbox" id="autoRefresh" checked> Auto-refresh every 15s</label>
+        <button class="ghost" id="refreshBtn" disabled>Refresh</button>
+    </div>
+</header>
 
-    <div class="panel">
-        <div class="row">
-            <input id="token" class="grow" type="password" placeholder="Admin token (from .env ADMIN_TOKEN)" autocomplete="off">
-            <select id="filter">
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-            </select>
-            <button onclick="loadPayments()">Load</button>
-        </div>
-        <div id="status" class="status">Enter the admin token and load payments. The token is kept only in this page, not saved.</div>
+<main>
+    <div id="notConnected" class="panel empty">
+        Enter the admin token and click Connect. The token is kept only in this tab and is cleared when you close it.
     </div>
 
-    <div class="panel" id="list"></div>
+    <div id="dashboard" hidden>
+        <div class="cards">
+            <div class="card"><div class="label">Pending</div><div class="value" id="sPending">-</div></div>
+            <div class="card"><div class="label">Active subscriptions</div><div class="value" id="sActive">-</div></div>
+            <div class="card"><div class="label">Approved revenue</div><div class="value" id="sRevenue">-</div></div>
+            <div class="card">
+                <div class="label">Auto-approve new payments</div>
+                <div class="value" id="sAuto">-</div>
+                <button class="ghost" id="autoBtn" style="margin-top: 0.5rem;">Turn on</button>
+                <div class="warn" id="autoNote" hidden>On: plans activate without checking the bank. Anyone who enters a reference number gets access.</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="tabs" id="tabs"></div>
+            <div class="toolbar">
+                <input type="search" id="search" class="grow" placeholder="Search by reference, username, plan or amount">
+            </div>
+            <div class="toolbar" id="bulkBar" hidden>
+                <label class="inline"><input type="checkbox" id="selectAll"> Select all shown</label>
+                <button class="ok" id="approveSelectedBtn" disabled>Approve selected (0)</button>
+                <button class="ok" id="approveAllBtn">Approve all pending (0)</button>
+            </div>
+            <div id="list"></div>
+        </div>
+    </div>
 </main>
 
+<div id="toasts"></div>
+
 <script>
-    const API_BASE = window.location.origin;
+    const API = window.location.origin;
+    const INR_PER_USD = 83;
+    const TABS = [
+        { key: "pending", label: "Pending" },
+        { key: "approved", label: "Approved" },
+        { key: "rejected", label: "Rejected" },
+        { key: "subscriptions", label: "Subscriptions" },
+    ];
 
-    function setStatus(text) {
-        document.getElementById('status').textContent = text;
+    let token = "";
+    let tab = "pending";
+    let search = "";
+    let summary = null;
+    let items = [];
+    let subs = [];
+    let selected = new Set();
+    let busy = false;
+    let timer = null;
+
+    const $ = id => document.getElementById(id);
+
+    function toast(text, kind = "") {
+        const t = document.createElement("div");
+        t.className = `toast ${kind}`;
+        t.textContent = text;
+        $("toasts").appendChild(t);
+        setTimeout(() => t.remove(), 4000);
     }
 
-    function renderItem(p) {
-        const row = document.createElement('div');
-        row.className = 'item';
-
-        const info = document.createElement('div');
-        const title = document.createElement('div');
-        title.textContent = `${p.plan} plan - ₹${p.amount_inr.toLocaleString('en-IN')}`;
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        meta.textContent = `UTR ${p.utr} - user #${p.user_id} - submitted ${new Date(p.created_at).toLocaleString()}` +
-            (p.expires_at ? ` - expires ${new Date(p.expires_at).toLocaleDateString()}` : '');
-        info.append(title, meta);
-        row.appendChild(info);
-
-        if (p.status === 'pending') {
-            const actions = document.createElement('div');
-            actions.className = 'row';
-            actions.append(
-                makeButton('Approve', 'approve', () => decide(p.id, 'approve', row)),
-                makeButton('Reject', 'reject', () => decide(p.id, 'reject', row))
-            );
-            row.appendChild(actions);
-        }
-        return row;
+    function money(n) {
+        return "₹" + Number(n).toLocaleString("en-IN");
     }
 
-    function makeButton(label, cls, onClick) {
-        const b = document.createElement('button');
+    function parseUtc(iso) {
+        return new Date(iso.slice(0, 23) + "Z");
+    }
+
+    function timeAgo(iso) {
+        const s = Math.max(0, Math.round((Date.now() - parseUtc(iso)) / 1000));
+        if (s < 60) return "just now";
+        if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+        if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+        return `${Math.floor(s / 86400)} d ago`;
+    }
+
+    function expiresText(iso) {
+        const days = Math.ceil((parseUtc(iso) - Date.now()) / 86400000);
+        if (days <= 0) return "expired";
+        return days === 1 ? "expires in 1 day" : `expires in ${days} days`;
+    }
+
+    function button(label, cls, onClick) {
+        const b = document.createElement("button");
         b.textContent = label;
         b.className = cls;
         b.onclick = onClick;
         return b;
     }
 
-    async function loadPayments() {
-        const token = document.getElementById('token').value.trim();
-        const filter = document.getElementById('filter').value;
-        const list = document.getElementById('list');
-        list.replaceChildren();
-        if (!token) {
-            setStatus('Enter the admin token first.');
+    async function api(path, options = {}) {
+        const headers = { "X-Admin-Token": token, ...(options.headers || {}) };
+        if (options.body) headers["Content-Type"] = "application/json";
+        const response = await fetch(API + path, { ...options, headers });
+        let data = null;
+        try { data = await response.json(); } catch (e) { data = null; }
+        if (response.status === 403) throw new Error("Wrong admin token");
+        if (!response.ok) throw new Error((data && data.detail) || `Request failed (${response.status})`);
+        return data;
+    }
+
+    async function connect() {
+        const entered = $("token").value.trim();
+        if (!entered) { toast("Enter the admin token", "err"); return; }
+        token = entered;
+        try {
+            summary = await api("/api/admin/summary");
+        } catch (e) {
+            token = "";
+            toast(e.message, "err");
             return;
         }
+        $("token").value = "";
+        $("notConnected").hidden = true;
+        $("dashboard").hidden = false;
+        $("refreshBtn").disabled = false;
+        if (!timer) timer = setInterval(() => { if ($("autoRefresh").checked) refresh(); }, 15000);
+        toast("Connected", "ok");
+        await refresh();
+    }
+
+    async function refresh() {
+        if (!token || busy) return;
         try {
-            const response = await fetch(`${API_BASE}/api/admin/payments?status=${filter}`, {
-                headers: { 'X-Admin-Token': token }
-            });
-            if (response.status === 403) {
-                setStatus('Access denied. Check the admin token.');
-                return;
-            }
-            const payments = await response.json();
-            if (payments.length === 0) {
-                setStatus(`No ${filter} payments.`);
-                return;
-            }
-            setStatus(`${payments.length} ${filter} payment(s).`);
-            payments.forEach(p => list.appendChild(renderItem(p)));
-        } catch (error) {
-            setStatus('Could not reach the server.');
+            const [s, list] = await Promise.all([
+                api("/api/admin/summary"),
+                tab === "subscriptions" ? api("/api/admin/subscriptions") : api(`/api/admin/payments?status=${tab}`),
+            ]);
+            summary = s;
+            if (tab === "subscriptions") subs = list; else items = list;
+            const ids = new Set(items.map(p => p.id));
+            selected = new Set([...selected].filter(id => ids.has(id)));
+            render();
+        } catch (e) {
+            toast(e.message, "err");
         }
     }
 
-    async function decide(id, decision, row) {
-        const token = document.getElementById('token').value.trim();
-        const buttons = row.querySelectorAll('button');
-        buttons.forEach(b => b.disabled = true);
+    function setTab(key) {
+        tab = key;
+        selected.clear();
+        items = [];
+        subs = [];
+        $("list").textContent = "Loading...";
+        refresh();
+    }
+
+    function visiblePayments() {
+        return items.filter(p => !search || `${p.utr} ${p.username} ${p.plan} ${p.amount_inr}`.toLowerCase().includes(search));
+    }
+
+    function render() {
+        renderSummary();
+        renderTabs();
+        $("bulkBar").hidden = tab !== "pending";
+        renderList();
+    }
+
+    function renderSummary() {
+        $("sPending").textContent = summary.pending;
+        $("sActive").textContent = summary.active_subscriptions;
+        $("sRevenue").textContent = money(summary.approved_revenue_inr);
+        $("sAuto").textContent = summary.auto_approve ? "On" : "Off";
+        $("autoBtn").textContent = summary.auto_approve ? "Turn off" : "Turn on";
+        $("autoBtn").className = summary.auto_approve ? "bad" : "ghost";
+        $("autoNote").hidden = !summary.auto_approve;
+    }
+
+    function renderTabs() {
+        const counts = {
+            pending: summary.pending,
+            approved: summary.approved,
+            rejected: summary.rejected,
+            subscriptions: summary.active_subscriptions,
+        };
+        $("tabs").replaceChildren(...TABS.map(t => {
+            const b = document.createElement("button");
+            b.className = "tab" + (t.key === tab ? " active" : "");
+            b.textContent = `${t.label} (${counts[t.key]})`;
+            b.onclick = () => { if (t.key !== tab) setTab(t.key); };
+            return b;
+        }));
+    }
+
+    function renderList() {
+        const list = $("list");
+        list.replaceChildren();
+
+        if (tab === "subscriptions") {
+            const rows = subs.filter(s => !search || `${s.username} ${s.plan}`.toLowerCase().includes(search));
+            if (!rows.length) { list.appendChild(emptyNote(search ? "No matches." : "No active subscriptions.")); return; }
+            rows.forEach(s => list.appendChild(subRow(s)));
+            return;
+        }
+
+        const rows = visiblePayments();
+        if (!rows.length) {
+            list.appendChild(emptyNote(search ? "No matches." : `No ${tab} payments.`));
+        } else {
+            rows.forEach(p => list.appendChild(paymentRow(p)));
+        }
+        updateBulkButtons();
+    }
+
+    function emptyNote(text) {
+        const d = document.createElement("div");
+        d.className = "empty";
+        d.textContent = text;
+        return d;
+    }
+
+    function paymentRow(p) {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        if (tab === "pending") {
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.checked = selected.has(p.id);
+            cb.onchange = () => {
+                if (cb.checked) selected.add(p.id); else selected.delete(p.id);
+                updateBulkButtons();
+            };
+            row.appendChild(cb);
+        }
+
+        const main = document.createElement("div");
+        main.className = "main";
+        const title = document.createElement("div");
+        title.className = "title";
+        const planName = p.plan.charAt(0).toUpperCase() + p.plan.slice(1);
+        title.textContent = `${planName} plan · ${money(p.amount_inr)} · ≈ $${(p.amount_inr / INR_PER_USD).toFixed(2)}`;
+        const badge = document.createElement("span");
+        badge.className = `badge ${p.status}`;
+        badge.textContent = p.status;
+        title.appendChild(badge);
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        let text = `${p.username || "user #" + p.user_id} · UTR ${p.utr} · submitted ${timeAgo(p.created_at)}`;
+        if (p.expires_at) text += ` · ${expiresText(p.expires_at)}`;
+        meta.textContent = text;
+        main.append(title, meta);
+        row.appendChild(main);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        actions.appendChild(button("Copy UTR", "ghost", () => copyText(p.utr)));
+        if (p.status === "pending") {
+            actions.appendChild(button("Approve", "ok", () => decide(p.id, "approve")));
+            actions.appendChild(button("Reject", "bad", () => decide(p.id, "reject")));
+        }
+        row.appendChild(actions);
+        return row;
+    }
+
+    function subRow(s) {
+        const row = document.createElement("div");
+        row.className = "row";
+        const main = document.createElement("div");
+        main.className = "main";
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = s.username || `user #${s.user_id}`;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `${s.plan} plan · ${expiresText(s.expires_at)} (until ${parseUtc(s.expires_at).toLocaleDateString()})`;
+        main.append(title, meta);
+        row.appendChild(main);
+        return row;
+    }
+
+    function updateBulkButtons() {
+        const visible = visiblePayments();
+        const n = selected.size;
+        $("approveSelectedBtn").textContent = `Approve selected (${n})`;
+        $("approveSelectedBtn").disabled = n === 0 || busy;
+        $("approveAllBtn").textContent = `Approve all pending (${summary.pending})`;
+        $("approveAllBtn").disabled = summary.pending === 0 || busy;
+        $("selectAll").checked = visible.length > 0 && visible.every(p => selected.has(p.id));
+    }
+
+    async function runBusy(fn) {
+        busy = true;
         try {
-            const response = await fetch(`${API_BASE}/api/admin/payments/${id}/${decision}`, {
-                method: 'POST',
-                headers: { 'X-Admin-Token': token }
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                setStatus(data.detail || 'Action failed.');
-                buttons.forEach(b => b.disabled = false);
-                return;
-            }
-            row.remove();
-            setStatus(`Payment #${id} ${data.status}.`);
-        } catch (error) {
-            setStatus('Could not reach the server.');
-            buttons.forEach(b => b.disabled = false);
+            await fn();
+        } catch (e) {
+            toast(e.message, "err");
+        } finally {
+            busy = false;
+            await refresh();
         }
     }
+
+    async function decide(id, decision) {
+        if (decision === "reject" && !confirm(`Reject payment #${id}?`)) return;
+        await runBusy(async () => {
+            await api(`/api/admin/payments/${id}/${decision}`, { method: "POST" });
+            selected.delete(id);
+            toast(`${decision === "approve" ? "Approved" : "Rejected"} payment #${id}`, decision === "approve" ? "ok" : "");
+        });
+    }
+
+    async function approveSelected() {
+        const ids = [...selected];
+        if (!ids.length) return;
+        if (!confirm(`Approve ${ids.length} selected payment(s)? Their plans become active immediately.`)) return;
+        await runBusy(async () => {
+            let ok = 0;
+            for (const id of ids) {
+                try {
+                    await api(`/api/admin/payments/${id}/approve`, { method: "POST" });
+                    ok++;
+                } catch (e) {
+                    toast(`Payment #${id}: ${e.message}`, "err");
+                }
+            }
+            selected.clear();
+            toast(`Approved ${ok} of ${ids.length}`, ok === ids.length ? "ok" : "err");
+        });
+    }
+
+    async function approveAll() {
+        if (!summary || summary.pending === 0) return;
+        if (!confirm(`Approve all ${summary.pending} pending payment(s)? Their plans become active immediately.`)) return;
+        await runBusy(async () => {
+            const result = await api("/api/admin/payments/approve-all", { method: "POST" });
+            selected.clear();
+            toast(`Approved ${result.approved} payment(s)`, "ok");
+        });
+    }
+
+    async function toggleAuto() {
+        const enable = !summary.auto_approve;
+        const message = enable
+            ? "Turn ON auto-approve?\n\nNew payments will activate plans immediately, without checking the bank. Anyone who enters a reference number gets access."
+            : "Turn OFF auto-approve? New payments will wait for your approval.";
+        if (!confirm(message)) return;
+        await runBusy(async () => {
+            await api("/api/admin/settings/auto-approve", { method: "POST", body: JSON.stringify({ enabled: enable }) });
+            toast(`Auto-approve ${enable ? "on" : "off"}`, enable ? "" : "ok");
+        });
+    }
+
+    async function copyText(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast(`Copied ${text}`, "ok");
+        } catch (e) {
+            toast("Copy failed. Select the text and copy it manually.", "err");
+        }
+    }
+
+    $("connectBtn").onclick = connect;
+    $("token").addEventListener("keydown", e => { if (e.key === "Enter") connect(); });
+    $("refreshBtn").onclick = () => refresh();
+    $("autoBtn").onclick = toggleAuto;
+    $("approveSelectedBtn").onclick = approveSelected;
+    $("approveAllBtn").onclick = approveAll;
+    $("search").oninput = e => {
+        search = e.target.value.trim().toLowerCase();
+        renderList();
+    };
+    $("selectAll").onchange = e => {
+        visiblePayments().forEach(p => {
+            if (e.target.checked) selected.add(p.id); else selected.delete(p.id);
+        });
+        renderList();
+    };
+    $("token").focus();
 </script>
 </body>
 </html>

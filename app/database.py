@@ -69,6 +69,13 @@ class PaymentRequest(Base):
     expires_at = Column(DateTime, nullable=True)
 
 
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(String(255), nullable=False)
+
+
 def get_db():
     db = SessionLocal()
     try:

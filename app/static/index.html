@@ -1679,7 +1679,9 @@
                     message.textContent = data.detail || 'Could not submit payment.';
                     return;
                 }
-                message.textContent = 'Received. Your plan will be activated after we confirm the payment.';
+                message.textContent = data.status === 'approved'
+                    ? 'Payment approved. Your plan is active now.'
+                    : 'Received. Your plan will be activated after we confirm the payment.';
             } catch (error) {
                 message.textContent = 'Network error. Please try again.';
             }
