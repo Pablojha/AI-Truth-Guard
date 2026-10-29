@@ -3,6 +3,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
 
+if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
+    raise RuntimeError(
+        "DATABASE_URL is not set. Add it under Vercel Settings > Environment Variables, then redeploy."
+    )
+
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./truthguard.db")
 
 # Handle postgres:// -> postgresql+psycopg2:// (explicit driver; SQLAlchemy's default changes between versions)
