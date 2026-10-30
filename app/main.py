@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import secrets
 import time
 from datetime import datetime, timedelta
 import io
@@ -20,7 +21,7 @@ from app.schemas import (
     VerificationRequest, VerificationResponse, HealthResponse, ReadinessResponse,
     ClaimResult, Verdict, ConfidenceBand, SignUpRequest, SignInRequest,
     UserResponse, DashboardResponse, VerificationHistoryItem,
-    PaymentSubmitRequest, PaymentRequestItem, AutoApproveRequest
+    PaymentSubmitRequest, PaymentRequestItem, AutoApproveRequest, DemoCheckoutRequest
 )
 from app.providers import get_provider
 from app.observability import RequestContext, get_metrics_summary, record_verdict, record_latency, metrics
@@ -435,6 +436,7 @@ async def payment_config():
         "upi_id": config.UPI_ID,
         "payee_name": config.UPI_PAYEE_NAME,
         "plans": {k: v["amount_inr"] for k, v in PLAN_PRICING.items()},
+        "payment_mode": config.PAYMENT_MODE,
     }
 
 
@@ -463,6 +465,34 @@ async def submit_payment(
     db.add(payment)
     if _auto_approve_enabled(db):
         _approve_payment(payment, datetime.utcnow())
+    db.commit()
+    db.refresh(payment)
+    return _payment_item(payment, current_user.username)
+
+
+DEMO_UTR_PREFIX = "DEMO-"
+
+
+@app.post("/api/payments/demo-checkout", response_model=PaymentRequestItem)
+async def demo_checkout(
+    request: DemoCheckoutRequest,
+    current_user: Optional[User] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if config.PAYMENT_MODE != "demo":
+        raise HTTPException(status_code=404, detail="Demo checkout is not enabled")
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Sign in before paying")
+
+    payment = PaymentRequest(
+        user_id=current_user.id,
+        plan=request.plan,
+        amount_inr=PLAN_PRICING[request.plan]["amount_inr"],
+        utr=f"{DEMO_UTR_PREFIX}{secrets.token_hex(6).upper()}",
+        status="pending",
+    )
+    db.add(payment)
+    _approve_payment(payment, datetime.utcnow())
     db.commit()
     db.refresh(payment)
     return _payment_item(payment, current_user.username)
@@ -552,7 +582,7 @@ async def admin_summary(
         "approved": counts.get("approved", 0),
         "rejected": counts.get("rejected", 0),
         "active_subscriptions": len(active_users),
-        "approved_revenue_inr": sum(p.amount_inr for p in approved_rows),
+        "approved_revenue_inr": sum(p.amount_inr for p in approved_rows if not p.utr.startswith(DEMO_UTR_PREFIX)),
         "auto_approve": _auto_approve_enabled(db),
     }
 

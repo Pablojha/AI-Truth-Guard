@@ -133,6 +133,10 @@ class PaymentSubmitRequest(BaseModel):
     utr: str = Field(..., pattern="^[A-Za-z0-9]{12,22}$")
 
 
+class DemoCheckoutRequest(BaseModel):
+    plan: str = Field(..., pattern="^(weekly|monthly|yearly)$")
+
+
 class PaymentRequestItem(BaseModel):
     id: int
     user_id: int

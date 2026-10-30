@@ -46,6 +46,7 @@ class Config:
     UPI_ID = os.getenv("UPI_ID", "")
     UPI_PAYEE_NAME = os.getenv("UPI_PAYEE_NAME", "AI TruthGuard")
     ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+    PAYMENT_MODE = os.getenv("PAYMENT_MODE", "upi")
 
     # Production check
     IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
