@@ -52,3 +52,8 @@ class Config:
 
 
 config = Config()
+
+if (config.IS_PRODUCTION or os.getenv("VERCEL")) and config.SECRET_KEY == "dev-secret-key-change-in-production":
+    raise RuntimeError(
+        "SECRET_KEY is not set. Add it to the hosting environment variables, then redeploy."
+    )

@@ -3,9 +3,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
 
-if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
+if (os.getenv("VERCEL") or os.getenv("ENVIRONMENT") == "production") and not os.getenv("DATABASE_URL"):
     raise RuntimeError(
-        "DATABASE_URL is not set. Add it under Vercel Settings > Environment Variables, then redeploy."
+        "DATABASE_URL is not set. Add it to the hosting environment variables, then redeploy."
     )
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./truthguard.db")

@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import time
 from datetime import datetime, timedelta
 import io
@@ -53,10 +55,30 @@ app.add_middleware(
 provider = get_provider()
 
 
-def get_current_user(user_id: Optional[int] = Cookie(None), db: Session = Depends(get_db)) -> Optional[User]:
-    if user_id is None:
+_COOKIE_SECURE = config.IS_PRODUCTION or bool(os.getenv("VERCEL"))
+
+
+def _sign_user_id(user_id: int) -> str:
+    payload = str(user_id)
+    signature = hmac.new(config.SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def _read_user_id(cookie_value: str) -> Optional[int]:
+    payload, _, signature = cookie_value.partition(".")
+    expected = hmac.new(config.SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    if not payload.isdigit() or not hmac.compare_digest(signature, expected):
         return None
-    return get_user_by_id(db, user_id)
+    return int(payload)
+
+
+def get_current_user(user_id: Optional[str] = Cookie(None), db: Session = Depends(get_db)) -> Optional[User]:
+    if not user_id:
+        return None
+    verified_id = _read_user_id(user_id)
+    if verified_id is None:
+        return None
+    return get_user_by_id(db, verified_id)
 
 
 # ============================================================================
@@ -140,9 +162,9 @@ async def signin(request: SignInRequest, response: Response, db: Session = Depen
 
     response.set_cookie(
         key="user_id",
-        value=str(user.id),
+        value=_sign_user_id(user.id),
         max_age=7 * 24 * 60 * 60,
-        secure=False,
+        secure=_COOKIE_SECURE,
         httponly=True,
         samesite="lax"
     )
@@ -403,7 +425,7 @@ def _payment_item(p: PaymentRequest, username: Optional[str] = None) -> PaymentR
 
 
 def _require_admin(x_admin_token: Optional[str]):
-    if not config.ADMIN_TOKEN or x_admin_token != config.ADMIN_TOKEN:
+    if not config.ADMIN_TOKEN or not x_admin_token or not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=403, detail="Admin access denied")
 
 
