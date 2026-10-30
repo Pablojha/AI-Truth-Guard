@@ -67,7 +67,7 @@
 <header class="top">
     <div class="top-row">
         <div class="brand">TruthGuard Admin</div>
-        <input id="token" type="password" placeholder="Admin token" autocomplete="off" style="width: 220px;">
+        <input id="token" type="password" placeholder="Admin token or demo ID" autocomplete="off" style="width: 220px;">
         <button id="connectBtn">Connect</button>
         <label class="inline"><input type="checkbox" id="autoRefresh" checked> Auto-refresh every 15s</label>
         <button class="ghost" id="refreshBtn" disabled>Refresh</button>
@@ -79,7 +79,14 @@
         Enter the admin token and click Connect. The token is kept only in this tab and is cleared when you close it.
     </div>
 
+    <div id="demoBox" class="panel" hidden>
+        <strong>Demo admin</strong>
+        <div class="meta" style="margin-top: 0.3rem;">Enter this ID in place of the admin token. It is read-only and shows demo payments only.</div>
+        <div style="margin-top: 0.5rem;">Demo ID: <code id="demoId"></code></div>
+    </div>
+
     <div id="dashboard" hidden>
+        <div id="demoBanner" class="panel" hidden>Demo view: read-only, showing demo payments only.</div>
         <div class="cards">
             <div class="card"><div class="label">Pending</div><div class="value" id="sPending">-</div></div>
             <div class="card"><div class="label">Active subscriptions</div><div class="value" id="sActive">-</div></div>
@@ -127,6 +134,7 @@
     let subs = [];
     let selected = new Set();
     let busy = false;
+    let role = "full";
     let timer = null;
 
     const $ = id => document.getElementById(id);
@@ -193,6 +201,7 @@
         }
         $("token").value = "";
         $("notConnected").hidden = true;
+        $("demoBox").hidden = true;
         $("dashboard").hidden = false;
         $("refreshBtn").disabled = false;
         if (!timer) timer = setInterval(() => { if ($("autoRefresh").checked) refresh(); }, 15000);
@@ -208,6 +217,7 @@
                 tab === "subscriptions" ? api("/api/admin/subscriptions") : api(`/api/admin/payments?status=${tab}`),
             ]);
             summary = s;
+            role = s.role || "full";
             if (tab === "subscriptions") subs = list; else items = list;
             const ids = new Set(items.map(p => p.id));
             selected = new Set([...selected].filter(id => ids.has(id)));
@@ -233,7 +243,7 @@
     function render() {
         renderSummary();
         renderTabs();
-        $("bulkBar").hidden = tab !== "pending";
+        $("bulkBar").hidden = tab !== "pending" || role === "demo";
         renderList();
     }
 
@@ -245,6 +255,9 @@
         $("autoBtn").textContent = summary.auto_approve ? "Turn off" : "Turn on";
         $("autoBtn").className = summary.auto_approve ? "bad" : "ghost";
         $("autoNote").hidden = !summary.auto_approve;
+        $("autoBtn").hidden = role === "demo";
+        $("sAuto").textContent = role === "demo" ? "Read-only" : (summary.auto_approve ? "On" : "Off");
+        $("demoBanner").hidden = role !== "demo";
     }
 
     function renderTabs() {
@@ -294,7 +307,7 @@
         const row = document.createElement("div");
         row.className = "row";
 
-        if (tab === "pending") {
+        if (tab === "pending" && role !== "demo") {
             const cb = document.createElement("input");
             cb.type = "checkbox";
             cb.checked = selected.has(p.id);
@@ -326,7 +339,7 @@
         const actions = document.createElement("div");
         actions.className = "actions";
         actions.appendChild(button("Copy UTR", "ghost", () => copyText(p.utr)));
-        if (p.status === "pending") {
+        if (p.status === "pending" && role !== "demo") {
             actions.appendChild(button("Approve", "ok", () => decide(p.id, "approve")));
             actions.appendChild(button("Reject", "bad", () => decide(p.id, "reject")));
         }
@@ -447,6 +460,19 @@
         });
         renderList();
     };
+    async function loadDemoId() {
+        try {
+            const response = await fetch(`${API}/api/admin/demo-id`);
+            const data = await response.json();
+            if (data.demo_id) {
+                $("demoId").textContent = data.demo_id;
+                $("demoBox").hidden = false;
+            }
+        } catch (e) {
+            $("demoBox").hidden = true;
+        }
+    }
+    loadDemoId();
     $("token").focus();
 </script>
 </body>

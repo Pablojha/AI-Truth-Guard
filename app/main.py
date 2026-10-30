@@ -425,9 +425,31 @@ def _payment_item(p: PaymentRequest, username: Optional[str] = None) -> PaymentR
     )
 
 
-def _require_admin(x_admin_token: Optional[str]):
-    if not config.ADMIN_TOKEN or not x_admin_token or not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+def _admin_role(x_admin_token: Optional[str]) -> Optional[str]:
+    if not x_admin_token:
+        return None
+    token = x_admin_token.encode()
+    if config.ADMIN_TOKEN and hmac.compare_digest(token, config.ADMIN_TOKEN.encode()):
+        return "full"
+    if config.ADMIN_DEMO_ID and hmac.compare_digest(token, config.ADMIN_DEMO_ID.encode()):
+        return "demo"
+    return None
+
+
+def _require_admin(x_admin_token: Optional[str]) -> str:
+    role = _admin_role(x_admin_token)
+    if role is None:
         raise HTTPException(status_code=403, detail="Admin access denied")
+    return role
+
+
+def _require_full_admin(x_admin_token: Optional[str]):
+    if _require_admin(x_admin_token) != "full":
+        raise HTTPException(status_code=403, detail="The demo admin is read-only")
+
+
+def _demo_payment_filter():
+    return PaymentRequest.utr.startswith(DEMO_UTR_PREFIX)
 
 
 @app.get("/api/payments/config")
@@ -520,8 +542,13 @@ async def list_payments(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
-    rows = db.query(PaymentRequest).filter(PaymentRequest.status == status).order_by(PaymentRequest.created_at).all()
+    role = _require_admin(x_admin_token)
+    query = db.query(PaymentRequest).filter(PaymentRequest.status == status)
+    if role == "demo":
+        query = query.filter(_demo_payment_filter())
+    rows = query.order_by(PaymentRequest.created_at).all()
+    if role == "demo":
+        return [_payment_item(p, "demo user") for p in rows]
     names = _usernames(db, [p.user_id for p in rows])
     return [_payment_item(p, names.get(p.user_id)) for p in rows]
 
@@ -533,7 +560,7 @@ async def review_payment(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
+    _require_full_admin(x_admin_token)
     if decision not in ("approve", "reject"):
         raise HTTPException(status_code=404, detail="Unknown decision")
     payment = db.query(PaymentRequest).filter(PaymentRequest.id == payment_id).first()
@@ -558,7 +585,7 @@ async def approve_all_pending(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
+    _require_full_admin(x_admin_token)
     now = datetime.utcnow()
     pending = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").all()
     for payment in pending:
@@ -567,22 +594,32 @@ async def approve_all_pending(
     return {"approved": len(pending)}
 
 
+@app.get("/api/admin/demo-id")
+async def admin_demo_id():
+    return {"demo_id": config.ADMIN_DEMO_ID or None}
+
+
 @app.get("/api/admin/summary")
 async def admin_summary(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
+    role = _require_admin(x_admin_token)
     now = datetime.utcnow()
-    counts = dict(db.query(PaymentRequest.status, func.count(PaymentRequest.id)).group_by(PaymentRequest.status).all())
-    approved_rows = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
+    scope = db.query(PaymentRequest)
+    if role == "demo":
+        scope = scope.filter(_demo_payment_filter())
+    counts = dict(scope.with_entities(PaymentRequest.status, func.count(PaymentRequest.id)).group_by(PaymentRequest.status).all())
+    approved_rows = scope.filter(PaymentRequest.status == "approved").all()
     active_users = {p.user_id for p in approved_rows if p.expires_at and p.expires_at > now}
+    revenue = 0 if role == "demo" else sum(p.amount_inr for p in approved_rows if not p.utr.startswith(DEMO_UTR_PREFIX))
     return {
+        "role": role,
         "pending": counts.get("pending", 0),
         "approved": counts.get("approved", 0),
         "rejected": counts.get("rejected", 0),
         "active_subscriptions": len(active_users),
-        "approved_revenue_inr": sum(p.amount_inr for p in approved_rows if not p.utr.startswith(DEMO_UTR_PREFIX)),
+        "approved_revenue_inr": revenue,
         "auto_approve": _auto_approve_enabled(db),
     }
 
@@ -592,22 +629,20 @@ async def admin_subscriptions(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
+    role = _require_admin(x_admin_token)
     now = datetime.utcnow()
-    rows = (
-        db.query(PaymentRequest)
-        .filter(PaymentRequest.status == "approved", PaymentRequest.expires_at > now)
-        .order_by(PaymentRequest.expires_at.desc())
-        .all()
-    )
-    names = _usernames(db, [p.user_id for p in rows])
+    query = db.query(PaymentRequest).filter(PaymentRequest.status == "approved", PaymentRequest.expires_at > now)
+    if role == "demo":
+        query = query.filter(_demo_payment_filter())
+    rows = query.order_by(PaymentRequest.expires_at.desc()).all()
+    names = _usernames(db, [p.user_id for p in rows]) if role == "full" else {}
     latest = {}
     for p in rows:
         latest.setdefault(p.user_id, p)
     return [
         {
             "user_id": uid,
-            "username": names.get(uid),
+            "username": names.get(uid) if role == "full" else "demo user",
             "plan": p.plan,
             "expires_at": p.expires_at.isoformat(),
         }
@@ -621,7 +656,7 @@ async def set_auto_approve(
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    _require_admin(x_admin_token)
+    _require_full_admin(x_admin_token)
     setting = db.query(AppSetting).filter(AppSetting.key == AUTO_APPROVE_KEY).first()
     if not setting:
         setting = AppSetting(key=AUTO_APPROVE_KEY, value="off")
